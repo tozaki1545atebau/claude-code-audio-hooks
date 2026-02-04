@@ -11,7 +11,7 @@ set -eo pipefail  # Exit on pipe failures, but continue on errors for better han
 # CONFIGURATION
 # =============================================================================
 
-VERSION="3.3.4"
+VERSION="3.3.5"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 

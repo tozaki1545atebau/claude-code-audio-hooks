@@ -210,7 +210,7 @@ def get_project_dir() -> Path:
     project_path_file = script_dir / ".project_path"
     if project_path_file.exists():
         try:
-            recorded_path = project_path_file.read_text(encoding="utf-8").strip()
+            recorded_path = project_path_file.read_text(encoding="utf-8-sig").strip()  # utf-8-sig handles BOM
             log_debug(f"Read .project_path: {recorded_path}")
             # Normalize path format for Windows compatibility
             recorded_path = normalize_path(recorded_path)

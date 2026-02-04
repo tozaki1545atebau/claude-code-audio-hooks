@@ -5,6 +5,33 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.3.5] - 2026-02-04
+
+### 🐛 Bug Fix: UTF-8 BOM Issue on Windows
+
+This release fixes a critical bug that prevented audio from playing on Windows installations.
+
+### Fixed
+
+#### 1. PowerShell UTF-8 BOM Issue (`scripts/install-windows.ps1`)
+- **Bug**: PowerShell 5.x's `-Encoding UTF8` writes files with BOM (Byte Order Mark)
+- **Impact**: `.project_path` file started with `\xef\xbb\xbf`, causing path resolution failure
+- **Fix**: Use `[System.IO.File]::WriteAllText()` with explicit UTF-8 encoding without BOM
+
+#### 2. Defensive BOM Handling (`hooks/hook_runner.py`)
+- **Enhancement**: Changed encoding from `utf-8` to `utf-8-sig` when reading `.project_path`
+- **Benefit**: Python's `utf-8-sig` codec automatically strips BOM if present
+- **Backward Compatible**: Works correctly with both BOM and non-BOM files
+
+### Technical Details
+
+The issue manifested as `NO_AUDIO_CONFIG` in hook trigger logs because:
+1. `.project_path` contained `\xef\xbb\xbfD:/path/...` instead of `D:/path/...`
+2. Path validation failed since the BOM-prefixed path didn't exist
+3. Audio files couldn't be located, resulting in silent failures
+
+---
+
 ## [3.3.4] - 2025-12-22
 
 ### 🪟 Full Windows Native Support & Cross-Platform Improvements

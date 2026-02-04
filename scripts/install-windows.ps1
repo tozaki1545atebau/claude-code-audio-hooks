@@ -35,7 +35,7 @@ param(
 # CONFIGURATION
 # =============================================================================
 
-$Version = "3.3.4"
+$Version = "3.3.5"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
@@ -269,9 +269,11 @@ function Step-InstallHooks {
     Copy-Item -Path $sourceRunner -Destination $destRunner -Force
     Write-Success "Installed hook_runner.py"
 
-    # Save project path (Windows format)
+    # Save project path (Windows format, UTF-8 without BOM)
     $projectPathFile = Join-Path $HooksDir ".project_path"
-    $ProjectDir.Replace('\', '/') | Out-File -FilePath $projectPathFile -Encoding UTF8 -NoNewline
+    $projectPathContent = $ProjectDir.Replace('\', '/')
+    # Use .NET method to write UTF-8 without BOM (PowerShell 5.x's -Encoding UTF8 adds BOM)
+    [System.IO.File]::WriteAllText($projectPathFile, $projectPathContent, [System.Text.UTF8Encoding]::new($false))
     Write-Success "Recorded project path: $ProjectDir"
 }
 
