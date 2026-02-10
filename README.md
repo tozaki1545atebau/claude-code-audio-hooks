@@ -1,11 +1,12 @@
 [![Project Banner](./public/claude-code-audio-hooks-logo.svg)](#)
 
-# Claude Code Audio Hooks 🔊
+# Claude Code Audio Hooks
 
-> **🎉 v3.3.4 Now Available!** Full Windows native support! New PowerShell installer, enhanced debug logging, and improved cross-platform compatibility!
+Get notified when Claude Code finishes tasks or needs your attention.
+Audio, desktop notifications, and text-to-speech - all platforms.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.3.4-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -20,20 +21,56 @@ https://github.com/user-attachments/assets/107ff48b-9d4f-40fd-9368-e36741b262ed
 
 ---
 
-## 📋 Table of Contents
+## Quick Setup (30 seconds)
 
-- [What Does This Do?](#-what-does-this-do)
-- [System Architecture](#-system-architecture)
-- [Before You Start](#-before-you-start)
-- [Quick Start](#-quick-start)
-- [Installation Flow](#-installation-flow)
+One command. No dependencies. No Python. No cloning.
+
+```bash
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
+```
+
+Restart Claude Code. Done.
+
+**This gives you:**
+- Desktop notification + sound when tasks complete
+- Urgent alert when authorization is needed
+- Background task completion alerts
+
+**To remove:**
+```bash
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-unsetup.sh | bash
+```
+
+Want custom audio, TTS, or advanced features? See [Full Installation](#-full-installation) below.
+
+---
+
+## Comparison
+
+| | DIY Hooks | Quick Setup | Full Install |
+|---|---|---|---|
+| **Setup time** | Manual JSON editing | 30 seconds | 2 minutes |
+| **Dependencies** | None | None | Python 3.6+ |
+| **Desktop notifications** | macOS only | All platforms | All platforms |
+| **Custom MP3 audio** | No | System sounds | 18 professional sounds |
+| **Text-to-speech** | No | No | Yes |
+| **Context-aware alerts** | No | No | Yes ("Permission needed for Bash") |
+| **Debouncing** | No | No | Yes |
+| **Per-hook config** | No | No | Yes (9 hook types) |
+| **Logging/diagnostics** | No | No | Yes |
+
+---
+
+## Table of Contents
+
+- [Quick Setup](#quick-setup-30-seconds)
+- [Comparison](#comparison)
+- [What Does This Do?](#what-does-this-do)
+- [Full Installation](#-full-installation)
 - [The 9 Notification Types](#-the-9-notification-types)
-- [Hook Execution Flow](#-hook-execution-flow)
 - [Configuration](#-configuration)
-- [Testing & Verification](#-testing--verification)
+- [Desktop Notifications & TTS](#-desktop-notifications--tts)
 - [Audio Customization Options](#-audio-customization-options)
-- [Customization](#-customization)
-- [Upgrading from v1.0](#-upgrading-from-v10)
 - [Troubleshooting](#-troubleshooting)
 - [Uninstalling](#-uninstalling)
 - [FAQ](#-faq)
@@ -41,7 +78,7 @@ https://github.com/user-attachments/assets/107ff48b-9d4f-40fd-9368-e36741b262ed
 
 ---
 
-## 📚 Documentation
+## Documentation
 
 | Document | Description |
 |----------|-------------|
@@ -53,15 +90,15 @@ https://github.com/user-attachments/assets/107ff48b-9d4f-40fd-9368-e36741b262ed
 
 ---
 
-## 🎯 What Does This Do?
+## What Does This Do?
 
-Claude Code Audio Hooks adds **intelligent audio notifications** to Claude Code CLI. Instead of constantly watching your terminal, you'll hear pleasant voice notifications when important events occur.
+Claude Code Audio Hooks adds **intelligent notifications** to Claude Code CLI. Instead of constantly watching your terminal, you get audio cues, desktop notifications, and optional text-to-speech when important events occur.
 
 ```mermaid
 graph LR
     A[User] -->|Interacts with| B[Claude Code CLI]
     B -->|Triggers| C[Hook System]
-    C -->|Plays| D[Audio Notifications]
+    C -->|Plays| D[Audio + Notifications + TTS]
     D -->|Alerts| A
 
     style B fill:#4A90E2
@@ -70,10 +107,10 @@ graph LR
 ```
 
 **Perfect for:**
-- 💼 **Multitasking** - Work on other things while Claude processes long tasks
-- 🚨 **Authorization Alerts** - Get notified when Claude needs your permission
-- 📚 **Background Tasks** - Know when subagent tasks complete
-- ⏰ **Focus Mode** - Let audio notifications keep you informed without interrupting flow
+- **Multitasking** - Work on other things while Claude processes long tasks
+- **Authorization Alerts** - Get notified when Claude needs your permission
+- **Background Tasks** - Know when subagent tasks complete
+- **Focus Mode** - Let notifications keep you informed without interrupting flow
 
 **Example Workflow:**
 1. Ask Claude to refactor a complex codebase
@@ -84,7 +121,7 @@ graph LR
 
 ---
 
-## 🏗️ System Architecture
+## System Architecture
 
 ```mermaid
 graph TB
@@ -93,48 +130,51 @@ graph TB
     end
 
     subgraph "Hook System"
-        HS[Hook Scripts<br/>9 Types]
-        HC[Hook Config<br/>Library]
-        PU[Path Utilities<br/>Cross-Platform]
+        HS[Hook Runner<br/>Python]
+        CTX[Context Parser<br/>stdin JSON]
     end
 
-    subgraph "Resources"
-        AF[Audio Files<br/>9 MP3s]
-        CF[Configuration<br/>JSON]
+    subgraph "Output Channels"
+        AF[Audio Files<br/>MP3s]
+        DN[Desktop Notifications<br/>osascript/notify-send]
+        TTS[Text-to-Speech<br/>say/espeak/SAPI]
     end
 
     subgraph "User"
         U[User Terminal]
-        AS[Audio System]
     end
 
-    CC -->|Triggers| HS
-    HS -->|Loads| HC
-    HC -->|Uses| PU
-    HC -->|Reads| CF
-    HC -->|Plays| AF
-    AF -->|Output| AS
-    AS -->|Alerts| U
-    U -->|Configures| CF
+    CC -->|Triggers + JSON| HS
+    HS -->|Parses| CTX
+    CTX -->|Plays| AF
+    CTX -->|Shows| DN
+    CTX -->|Speaks| TTS
+    AF -->|Alerts| U
+    DN -->|Alerts| U
+    TTS -->|Alerts| U
 
     style CC fill:#4A90E2
     style HS fill:#7ED321
-    style HC fill:#BD10E0
+    style CTX fill:#BD10E0
     style AF fill:#F5A623
-    style AS fill:#50E3C2
+    style DN fill:#50E3C2
+    style TTS fill:#9013FE
 ```
 
 ### Key Components
 
-1. **Hook Scripts** - 9 specialized scripts that respond to different Claude Code events
-2. **Hook Config Library** - Shared functionality for all hooks (audio playback, path handling)
-3. **Path Utilities** - Cross-platform path conversion (WSL/Git Bash/Cygwin/macOS/Linux)
-4. **Audio Files** - Professional ElevenLabs voice recordings for each notification type
-5. **Configuration** - JSON-based user preferences for enabled hooks and audio files
+1. **Hook Runner** - Python-based hook executor that works on all platforms
+2. **Context Parser** - Reads JSON from stdin for context-aware notifications
+3. **Audio Files** - Professional ElevenLabs voice recordings + UI chimes
+4. **Desktop Notifications** - Native popups (osascript, notify-send, PowerShell)
+5. **Text-to-Speech** - Spoken context-aware messages (say, espeak, SAPI)
+6. **Configuration** - JSON-based preferences for hooks, audio, notifications, and TTS
 
 ---
 
-## ✅ Before You Start
+## Before You Start
+
+*Skip this section if you used [Quick Setup](#quick-setup-30-seconds) above.*
 
 ### **Prerequisites:**
 
@@ -185,9 +225,9 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 
 ---
 
-## 🚀 Quick Start
+## Full Installation
 
-### **🤖 AI-Assisted Installation** (Recommended - Zero Effort!)
+### **AI-Assisted Installation** (Recommended - Zero Effort!)
 
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
@@ -201,7 +241,7 @@ Your AI will handle everything automatically!
 
 ---
 
-### **⚡ Quick Manual Installation** (1-2 minutes)
+### **Manual Installation** (1-2 minutes)
 
 ```bash
 # 1. Clone the repository
@@ -642,7 +682,66 @@ After editing, restart Claude Code for changes to take effect.
 
 ---
 
-## 🧪 Testing & Verification
+## Desktop Notifications & TTS
+
+The Full Install supports three output channels that can be used independently or together:
+
+### **Notification Modes**
+
+Configure in `config/user_preferences.json`:
+
+```json
+{
+  "notification_settings": {
+    "mode": "audio_and_notification",
+    "show_context": true
+  }
+}
+```
+
+| Mode | Audio | Desktop Popup | Best For |
+|------|-------|---------------|----------|
+| `audio_only` | Yes | No | Classic behavior, backward compatible |
+| `notification_only` | No | Yes | Silent environments, visual-only alerts |
+| `audio_and_notification` | Yes | Yes | Maximum awareness (recommended) |
+
+Desktop notifications show context from Claude Code:
+- **Stop**: "Task completed"
+- **Notification**: "Authorization needed: Allow Bash command?"
+- **PreToolUse**: "Running: Bash"
+- **SubagentStop**: "Background task finished (Explore)"
+
+### **Text-to-Speech**
+
+Enable spoken context-aware messages:
+
+```json
+{
+  "tts_settings": {
+    "enabled": true,
+    "messages": {
+      "stop": "Task completed",
+      "notification": "Attention, authorization needed",
+      "subagent_stop": "Background task finished"
+    }
+  }
+}
+```
+
+**Platform TTS engines:**
+
+| Platform | Engine | Install |
+|----------|--------|---------|
+| macOS | `say` | Built-in |
+| Linux | `espeak` or `spd-say` | `sudo apt install espeak` |
+| Windows | SAPI (System.Speech) | Built-in |
+| WSL | SAPI via PowerShell | Built-in |
+
+Custom per-hook messages override the auto-generated context. Hooks not listed in `messages` use the auto-generated context string.
+
+---
+
+## Testing & Verification
 
 The installation script (`install-complete.sh`) automatically performs comprehensive validation, including:
 
@@ -1526,12 +1625,12 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 3.3.3** - WSL audio fix + Hooks format fix + Full automation support
+**Current Version: 4.0.0** - Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 
 ---
 
-**One-Command Install · 95% Success Rate · AI-Autonomous · Cross-Platform · Open Source**
+**30-Second Quick Setup · Desktop Notifications · TTS · Custom Audio · Cross-Platform · Open Source**
 
 </div>

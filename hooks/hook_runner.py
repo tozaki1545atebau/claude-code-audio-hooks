@@ -16,6 +16,7 @@ Environment Variables:
 
 import json
 import os
+import shutil
 import sys
 import time
 import subprocess
@@ -653,10 +654,220 @@ def play_audio(audio_file: Path) -> bool:
         return False
 
 # =============================================================================
+# STDIN PARSING
+# =============================================================================
+
+def parse_stdin() -> dict:
+    """Parse JSON data from Claude Code via stdin."""
+    try:
+        raw = sys.stdin.read()
+        if raw.strip():
+            data = json.loads(raw)
+            log_debug(f"Parsed stdin JSON: {list(data.keys()) if isinstance(data, dict) else type(data)}")
+            return data if isinstance(data, dict) else {}
+    except json.JSONDecodeError as e:
+        log_debug(f"stdin was not valid JSON: {e}")
+    except Exception as e:
+        log_debug(f"Failed to read stdin: {e}")
+    return {}
+
+# =============================================================================
+# CONTEXT EXTRACTION
+# =============================================================================
+
+def get_notification_context(hook_type: str, stdin_data: dict) -> str:
+    """Generate human-readable context from hook data."""
+    if hook_type == "stop":
+        return "Task completed"
+    elif hook_type == "notification":
+        msg = stdin_data.get("message", "")
+        return "Authorization needed" + (f": {msg[:80]}" if msg else "")
+    elif hook_type == "pretooluse":
+        tool = stdin_data.get("tool_name", "unknown")
+        return f"Running: {tool}"
+    elif hook_type == "posttooluse":
+        tool = stdin_data.get("tool_name", "unknown")
+        return f"Completed: {tool}"
+    elif hook_type == "subagent_stop":
+        agent = stdin_data.get("agent_type", "")
+        return "Background task finished" + (f" ({agent})" if agent else "")
+    elif hook_type == "session_start":
+        return "Session started"
+    elif hook_type == "session_end":
+        return "Session ended"
+    elif hook_type == "precompact":
+        return "Compacting context"
+    elif hook_type == "userpromptsubmit":
+        return "Prompt received"
+    return hook_type.replace("_", " ").title()
+
+# =============================================================================
+# DESKTOP NOTIFICATIONS
+# =============================================================================
+
+def _escape_notification_string(s: str) -> str:
+    """Escape a string for safe use in notification commands."""
+    # Remove characters that could cause shell/osascript injection
+    return s.replace('"', '\\"').replace("'", "\\'").replace('`', '').replace('$', '')
+
+
+def send_desktop_notification(title: str, message: str, urgency: str = "normal") -> bool:
+    """Send a desktop notification using platform-native methods.
+
+    Args:
+        title: Notification title
+        message: Notification body text
+        urgency: 'normal' or 'critical'
+
+    Returns:
+        True if notification was dispatched, False otherwise
+    """
+    system = platform.system()
+    safe_title = _escape_notification_string(title)
+    safe_message = _escape_notification_string(message)
+
+    try:
+        if system == "Darwin":
+            sound = "Sosumi" if urgency == "critical" else "Glass"
+            script = f'display notification "{safe_message}" with title "{safe_title}" sound name "{sound}"'
+            subprocess.Popen(
+                ["osascript", "-e", script],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            log_debug(f"Sent macOS notification: {title} - {message}")
+            return True
+
+        elif system == "Linux":
+            if is_wsl():
+                # WSL: use powershell.exe for Windows-side toast
+                ps_cmd = (
+                    '[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"); '
+                    f'[System.Windows.Forms.MessageBox]::Show("{safe_message}","{safe_title}","OK","Information") | Out-Null'
+                )
+                subprocess.Popen(
+                    ["powershell.exe", "-WindowStyle", "Hidden", "-Command", ps_cmd],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                log_debug(f"Sent WSL notification via PowerShell: {title}")
+                return True
+            else:
+                # Native Linux: use notify-send
+                if shutil.which("notify-send"):
+                    cmd = ["notify-send"]
+                    if urgency == "critical":
+                        cmd.extend(["-u", "critical"])
+                    cmd.extend([title, message])
+                    subprocess.Popen(cmd, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    log_debug(f"Sent Linux notification: {title} - {message}")
+                    return True
+                else:
+                    log_debug("notify-send not found, skipping desktop notification")
+                    return False
+
+        elif system == "Windows":
+            ps_cmd = (
+                '[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"); '
+                f'[System.Windows.Forms.MessageBox]::Show("{safe_message}","{safe_title}","OK","Information") | Out-Null'
+            )
+            subprocess.Popen(
+                ["powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", ps_cmd],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
+            )
+            log_debug(f"Sent Windows notification: {title}")
+            return True
+
+    except FileNotFoundError as e:
+        log_debug(f"Notification command not found: {e}")
+    except Exception as e:
+        log_error(f"Desktop notification failed: {e}")
+
+    return False
+
+# =============================================================================
+# TEXT-TO-SPEECH
+# =============================================================================
+
+def play_tts(message: str) -> bool:
+    """Speak a message using platform-native TTS.
+
+    Args:
+        message: Text to speak
+
+    Returns:
+        True if TTS was dispatched, False otherwise
+    """
+    system = platform.system()
+    # Sanitize message for shell safety
+    safe_message = _escape_notification_string(message)
+
+    try:
+        if system == "Darwin":
+            subprocess.Popen(
+                ["say", message],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL
+            )
+            log_debug(f"TTS (macOS say): {message}")
+            return True
+
+        elif system == "Linux":
+            if is_wsl():
+                # WSL: use Windows SAPI via PowerShell
+                ps_cmd = (
+                    'Add-Type -AssemblyName System.Speech; '
+                    f'(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak("{safe_message}")'
+                )
+                subprocess.Popen(
+                    ["powershell.exe", "-WindowStyle", "Hidden", "-Command", ps_cmd],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL
+                )
+                log_debug(f"TTS (WSL PowerShell): {message}")
+                return True
+            else:
+                # Native Linux: try espeak, then spd-say
+                for cmd_name in ["espeak", "spd-say"]:
+                    if shutil.which(cmd_name):
+                        subprocess.Popen(
+                            [cmd_name, message],
+                            stdout=subprocess.DEVNULL,
+                            stderr=subprocess.DEVNULL
+                        )
+                        log_debug(f"TTS (Linux {cmd_name}): {message}")
+                        return True
+                log_debug("No Linux TTS engine found (espeak, spd-say)")
+                return False
+
+        elif system == "Windows":
+            ps_cmd = (
+                'Add-Type -AssemblyName System.Speech; '
+                f'(New-Object System.Speech.Synthesis.SpeechSynthesizer).Speak("{safe_message}")'
+            )
+            subprocess.Popen(
+                ["powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", ps_cmd],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
+            )
+            log_debug(f"TTS (Windows SAPI): {message}")
+            return True
+
+    except FileNotFoundError as e:
+        log_debug(f"TTS command not found: {e}")
+    except Exception as e:
+        log_error(f"TTS failed: {e}")
+
+    return False
+
+# =============================================================================
 # MAIN HOOK EXECUTION
 # =============================================================================
 
-def run_hook(hook_type: str) -> int:
+def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     """
     Main hook execution function.
 
@@ -679,26 +890,48 @@ def run_hook(hook_type: str) -> int:
         log_trigger(hook_type, "DEBOUNCED")
         return 0
 
-    # Get audio file
-    audio_file = get_audio_file(hook_type)
+    # Load config once for notification/TTS settings
+    config = load_config()
 
-    if not audio_file:
-        log_trigger(hook_type, "NO_AUDIO_CONFIG")
-        return 0
+    # Determine notification mode (backward compatible: default to audio_only)
+    notification_settings = config.get("notification_settings", {})
+    mode = notification_settings.get("mode", "audio_only")
 
-    if not audio_file.exists():
-        log_trigger(hook_type, "FILE_NOT_FOUND", str(audio_file))
-        log_error(f"Audio file not found: {audio_file}")
-        return 0
+    # Play audio (unless mode is notification_only)
+    if mode in ("audio_only", "audio_and_notification"):
+        audio_file = get_audio_file(hook_type)
+        if not audio_file:
+            log_trigger(hook_type, "NO_AUDIO_CONFIG")
+        elif not audio_file.exists():
+            log_trigger(hook_type, "FILE_NOT_FOUND", str(audio_file))
+            log_error(f"Audio file not found: {audio_file}")
+        else:
+            success = play_audio(audio_file)
+            if success:
+                log_trigger(hook_type, "PLAYED", audio_file.name)
+            else:
+                log_trigger(hook_type, "PLAY_FAILED", audio_file.name)
+                log_error(f"Failed to play audio: {audio_file}")
+    elif mode == "notification_only":
+        log_trigger(hook_type, "AUDIO_SKIPPED", f"mode={mode}")
 
-    # Play audio
-    success = play_audio(audio_file)
+    # Desktop notification
+    if mode in ("notification_only", "audio_and_notification"):
+        context = get_notification_context(hook_type, stdin_data or {})
+        urgency = "critical" if hook_type == "notification" else "normal"
+        notif_sent = send_desktop_notification("Claude Code", context, urgency)
+        if notif_sent:
+            log_debug(f"Desktop notification sent for {hook_type}: {context}")
 
-    if success:
-        log_trigger(hook_type, "PLAYED", audio_file.name)
-    else:
-        log_trigger(hook_type, "PLAY_FAILED", audio_file.name)
-        log_error(f"Failed to play audio: {audio_file}")
+    # TTS (text-to-speech)
+    tts_settings = config.get("tts_settings", {})
+    if tts_settings.get("enabled", False):
+        context = get_notification_context(hook_type, stdin_data or {})
+        custom_messages = tts_settings.get("messages", {})
+        tts_message = custom_messages.get(hook_type, context)
+        tts_sent = play_tts(tts_message)
+        if tts_sent:
+            log_debug(f"TTS played for {hook_type}: {tts_message}")
 
     return 0
 
@@ -724,13 +957,10 @@ def main() -> int:
     log_debug(f"Python version: {sys.version}")
     log_debug(f"Platform: {platform.system()} {platform.release()}")
 
-    # Consume stdin to prevent blocking (Claude Code sends JSON input)
-    try:
-        sys.stdin.read()
-    except Exception:
-        pass
+    # Parse stdin JSON from Claude Code (provides context about the hook event)
+    stdin_data = parse_stdin()
 
-    return run_hook(hook_type)
+    return run_hook(hook_type, stdin_data)
 
 
 if __name__ == "__main__":

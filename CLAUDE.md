@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 3.3.4 | **Last Updated:** 2025-12-22
+> **Version:** 4.0.0 | **Last Updated:** 2026-02-10
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -21,6 +21,15 @@ graph LR
 
 ## Quick Reference: Installation Commands
 
+### Quick Setup (Lite - Recommended First)
+Zero dependencies, zero Python. Single command:
+```bash
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
+```
+Gives: desktop notifications + system sounds for Stop, Notification, SubagentStop hooks.
+
+### Full Install (Standard/Pro)
+
 | Platform | Command |
 |----------|---------|
 | **Windows (PowerShell)** | `.\scripts\install-windows.ps1` |
@@ -28,6 +37,8 @@ graph LR
 | **WSL** | `bash scripts/install-complete.sh` |
 | **macOS** | `bash scripts/install-complete.sh` |
 | **Linux** | `bash scripts/install-complete.sh` |
+
+Gives: custom MP3 audio + desktop notifications + context-aware alerts + TTS (optional).
 
 ## Platform Detection Decision Tree
 
@@ -88,7 +99,9 @@ claude-code-audio-hooks/
 │       └── hook_config.sh       # Shared bash functions (macOS/Linux)
 │
 ├── scripts/
-│   ├── install-complete.sh      # Bash installer (all platforms)
+│   ├── quick-setup.sh           # Lite tier installer (zero deps, curl | bash)
+│   ├── quick-unsetup.sh         # Lite tier uninstaller
+│   ├── install-complete.sh      # Full installer (all platforms)
 │   ├── install-windows.ps1      # PowerShell installer (Windows)
 │   ├── uninstall.sh             # Uninstaller
 │   ├── configure.sh             # Configuration utility
@@ -200,8 +213,16 @@ D:/github_repository/claude-code-audio-hooks
     "userpromptsubmit": false,
     "precompact": false
   },
-  "audio_settings": {
-    "theme": "default"
+  "notification_settings": {
+    "mode": "audio_and_notification",
+    "show_context": true
+  },
+  "tts_settings": {
+    "enabled": false,
+    "messages": {
+      "stop": "Task completed",
+      "notification": "Attention, authorization needed"
+    }
   }
 }
 ```
@@ -242,9 +263,19 @@ python scripts/diagnose.py -v --test-audio
 
 ## For AI Assistants: Installation Steps
 
-When a user asks to install this project, follow these steps:
+When a user asks to install this project, **recommend Quick Setup first** unless they specifically need custom audio or TTS.
 
-### Step 1: Detect Environment
+### Option A: Quick Setup (Recommended)
+
+```bash
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
+```
+
+Then instruct user to restart Claude Code.
+
+### Option B: Full Install (Custom Audio / TTS / Advanced Features)
+
+#### Step 1: Detect Environment
 ```bash
 # Check OS
 uname -s  # Linux, Darwin (macOS), or MINGW*/MSYS* (Git Bash)
@@ -256,13 +287,13 @@ cat /proc/version 2>/dev/null | grep -i microsoft
 python3 --version || python --version || py --version
 ```
 
-### Step 2: Clone Repository
+#### Step 2: Clone Repository
 ```bash
 git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git
 cd claude-code-audio-hooks
 ```
 
-### Step 3: Run Appropriate Installer
+#### Step 3: Run Appropriate Installer
 
 **Windows PowerShell:**
 ```powershell
@@ -274,7 +305,7 @@ cd claude-code-audio-hooks
 bash scripts/install-complete.sh
 ```
 
-### Step 4: Verify Installation
+#### Step 4: Verify Installation
 ```bash
 # Check hook runner installed
 ls -la ~/.claude/hooks/hook_runner.py
@@ -286,7 +317,7 @@ cat ~/.claude/settings.json | grep hook_runner
 cat ~/.claude/hooks/.project_path
 ```
 
-### Step 5: Test
+#### Step 5: Test
 Instruct user to:
 1. Restart Claude Code (close and reopen terminal)
 2. Run: `claude "What is 2+2?"`
@@ -296,6 +327,8 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.0.0 | 2026-02-10 | Quick Setup (Lite tier), desktop notifications, TTS, context-aware alerts |
+| 3.3.5 | 2025-12-27 | UTF-8 BOM fix for Windows |
 | 3.3.4 | 2025-12-22 | Windows PowerShell installer, diagnostic tool, debug logging |
 | 3.3.3 | 2025-11-07 | WSL audio fix, hooks format fix |
 | 3.3.0 | 2025-11-06 | Non-interactive mode for all scripts |
