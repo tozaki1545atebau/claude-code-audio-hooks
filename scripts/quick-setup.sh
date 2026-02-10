@@ -157,7 +157,7 @@ generate_wsl_hooks() {
       "hooks": [
         {
           "type": "command",
-          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Exclamation.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Task completed','Claude Code','OK','Information') | Out-Null\" &",
+          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Exclamation.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Task completed', [System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Seconds 6; $n.Dispose()\" &",
           "timeout": 10
         }
       ]
@@ -168,7 +168,7 @@ generate_wsl_hooks() {
       "hooks": [
         {
           "type": "command",
-          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Hand.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); [System.Windows.Forms.MessageBox]::Show('Authorization needed','Claude Code','OK','Warning') | Out-Null\" &",
+          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Hand.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Warning; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Authorization needed', [System.Windows.Forms.ToolTipIcon]::Warning); Start-Sleep -Seconds 6; $n.Dispose()\" &",
           "timeout": 10
         }
       ]
@@ -179,7 +179,7 @@ generate_wsl_hooks() {
       "hooks": [
         {
           "type": "command",
-          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Asterisk.Play()\" &",
+          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Asterisk.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Background task finished', [System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Seconds 6; $n.Dispose()\" &",
           "timeout": 10
         }
       ]

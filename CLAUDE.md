@@ -186,9 +186,9 @@ sequenceDiagram
 ```json
 {
   "hooks": {
-    "Notification": [{"hooks": [{"type": "command", "command": "py \"~/.claude/hooks/hook_runner.py\" notification"}]}],
-    "Stop": [{"hooks": [{"type": "command", "command": "py \"~/.claude/hooks/hook_runner.py\" stop"}]}],
-    // ... 7 more hooks
+    "Notification": [{"hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/hook_runner.py notification", "timeout": 10}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/hook_runner.py stop", "timeout": 10}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/hook_runner.py subagent_stop", "timeout": 10}]}]
   }
 }
 ```

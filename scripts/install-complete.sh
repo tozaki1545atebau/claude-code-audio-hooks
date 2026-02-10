@@ -500,40 +500,37 @@ try:
 
         env_note = "(Windows - Python hooks)"
     else:
-        # Unix: Use bash scripts directly
-        hooks_dir = "~/.claude/hooks"
+        # Unix: Use Python hook_runner.py for full v4.0 features
+        # (desktop notifications, TTS, stdin context parsing)
+        hook_runner = "~/.claude/hooks/hook_runner.py"
 
-        hooks_with_matcher = {
-            'PreToolUse': f'{hooks_dir}/pretooluse_hook.sh',
-            'PostToolUse': f'{hooks_dir}/posttooluse_hook.sh'
+        # Detect python3 command
+        python_cmd = "python3"
+
+        hook_types = {
+            'PreToolUse': 'pretooluse',
+            'PostToolUse': 'posttooluse',
+            'Notification': 'notification',
+            'Stop': 'stop',
+            'UserPromptSubmit': 'userpromptsubmit',
+            'SubagentStop': 'subagent_stop',
+            'PreCompact': 'precompact',
+            'SessionStart': 'session_start',
+            'SessionEnd': 'session_end'
         }
 
-        hooks_without_matcher = {
-            'Notification': f'{hooks_dir}/notification_hook.sh',
-            'Stop': f'{hooks_dir}/stop_hook.sh',
-            'UserPromptSubmit': f'{hooks_dir}/userprompt_hook.sh',
-            'SubagentStop': f'{hooks_dir}/subagent_hook.sh',
-            'PreCompact': f'{hooks_dir}/precompact_hook.sh',
-            'SessionStart': f'{hooks_dir}/session_start_hook.sh',
-            'SessionEnd': f'{hooks_dir}/session_end_hook.sh'
-        }
+        hooks_with_matcher = ['PreToolUse', 'PostToolUse']
 
-        for hook_name, hook_path in hooks_with_matcher.items():
-            settings['hooks'][hook_name] = [
-                {
-                    'matcher': '',
-                    'hooks': [{'type': 'command', 'command': hook_path}]
-                }
-            ]
+        for hook_name, hook_type in hook_types.items():
+            command = f'{python_cmd} {hook_runner} {hook_type}'
+            entry = {
+                'hooks': [{'type': 'command', 'command': command, 'timeout': 10}]
+            }
+            if hook_name in hooks_with_matcher:
+                entry['matcher'] = ''
+            settings['hooks'][hook_name] = [entry]
 
-        for hook_name, hook_path in hooks_without_matcher.items():
-            settings['hooks'][hook_name] = [
-                {
-                    'hooks': [{'type': 'command', 'command': hook_path}]
-                }
-            ]
-
-        env_note = "(Unix - bash hooks)"
+        env_note = "(Unix - Python hooks)"
 
     # Save settings
     with open(settings_file, 'w', encoding='utf-8') as f:

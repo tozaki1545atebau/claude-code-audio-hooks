@@ -740,17 +740,23 @@ def send_desktop_notification(title: str, message: str, urgency: str = "normal")
 
         elif system == "Linux":
             if is_wsl():
-                # WSL: use powershell.exe for Windows-side toast
+                # WSL: use PowerShell NotifyIcon balloon tip (non-blocking toast)
                 ps_cmd = (
                     '[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"); '
-                    f'[System.Windows.Forms.MessageBox]::Show("{safe_message}","{safe_title}","OK","Information") | Out-Null'
+                    '$n = New-Object System.Windows.Forms.NotifyIcon; '
+                    '$n.Icon = [System.Drawing.SystemIcons]::Information; '
+                    '$n.Visible = $true; '
+                    f'$n.ShowBalloonTip(5000, "{safe_title}", "{safe_message}", '
+                    f'[System.Windows.Forms.ToolTipIcon]::{"Warning" if urgency == "critical" else "Info"}); '
+                    'Start-Sleep -Seconds 6; '
+                    '$n.Dispose()'
                 )
                 subprocess.Popen(
                     ["powershell.exe", "-WindowStyle", "Hidden", "-Command", ps_cmd],
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL
                 )
-                log_debug(f"Sent WSL notification via PowerShell: {title}")
+                log_debug(f"Sent WSL balloon notification via PowerShell: {title}")
                 return True
             else:
                 # Native Linux: use notify-send
@@ -767,9 +773,16 @@ def send_desktop_notification(title: str, message: str, urgency: str = "normal")
                     return False
 
         elif system == "Windows":
+            # Windows: use NotifyIcon balloon tip (non-blocking toast)
             ps_cmd = (
                 '[void][System.Reflection.Assembly]::LoadWithPartialName("System.Windows.Forms"); '
-                f'[System.Windows.Forms.MessageBox]::Show("{safe_message}","{safe_title}","OK","Information") | Out-Null'
+                '$n = New-Object System.Windows.Forms.NotifyIcon; '
+                '$n.Icon = [System.Drawing.SystemIcons]::Information; '
+                '$n.Visible = $true; '
+                f'$n.ShowBalloonTip(5000, "{safe_title}", "{safe_message}", '
+                f'[System.Windows.Forms.ToolTipIcon]::{"Warning" if urgency == "critical" else "Info"}); '
+                'Start-Sleep -Seconds 6; '
+                '$n.Dispose()'
             )
             subprocess.Popen(
                 ["powershell.exe", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", ps_cmd],
@@ -777,7 +790,7 @@ def send_desktop_notification(title: str, message: str, urgency: str = "normal")
                 stderr=subprocess.DEVNULL,
                 creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, 'CREATE_NO_WINDOW') else 0
             )
-            log_debug(f"Sent Windows notification: {title}")
+            log_debug(f"Sent Windows balloon notification: {title}")
             return True
 
     except FileNotFoundError as e:
