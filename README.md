@@ -12,12 +12,21 @@ Audio, desktop notifications, and text-to-speech - all platforms.
 
 ---
 
+## Installation Guide
 https://github.com/user-attachments/assets/a9919363-f76c-4dd2-9141-e1c681573d75
 
-
+## Effects before version v4.0.0
 https://github.com/user-attachments/assets/107ff48b-9d4f-40fd-9368-e36741b262ed
 
+## Effects after version v4.0.0
 
+### Ubuntu
+https://github.com/user-attachments/assets/2e2f1046-e690-409c-ba05-e621ded295dd
+
+### PowerShell
+https://github.com/user-attachments/assets/a1b11528-a248-415f-93d9-7859261d9abd
+
+https://github.com/user-attachments/assets/3fd4c3aa-8204-4a06-be1b-d49dc9bb7cf9
 
 ---
 
