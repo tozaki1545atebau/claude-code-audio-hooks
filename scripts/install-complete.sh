@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Complete Installation Script
-# Version: 4.0.2
+# Version: 4.0.3
 # This script handles the complete installation process automatically
 # Now with integrated environment detection, platform fixes, and validation
 # Supports non-interactive mode for Claude Code and automation
@@ -11,7 +11,7 @@ set -eo pipefail  # Exit on errors (-e) and pipe failures (pipefail)
 # CONFIGURATION
 # =============================================================================
 
-VERSION="4.0.2"
+VERSION="4.0.3"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 

@@ -22,7 +22,7 @@
     Automated installation without prompts.
 
 .NOTES
-    Version: 4.0.2
+    Version: 4.0.3
     Requires: Python 3.6+, Claude Code CLI
 #>
 
@@ -35,7 +35,7 @@ param(
 # CONFIGURATION
 # =============================================================================
 
-$Version = "4.0.2"
+$Version = "4.0.3"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
