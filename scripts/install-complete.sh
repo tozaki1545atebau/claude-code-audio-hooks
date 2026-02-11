@@ -432,7 +432,7 @@ step_configure_settings() {
 
     # Update settings.json
     print_info "Updating settings.json..."
-    $PYTHON_CMD << 'EOF'
+    PROJECT_DIR="$PROJECT_DIR" $PYTHON_CMD << 'EOF'
 import json
 import os
 import sys
@@ -442,6 +442,17 @@ settings_file = os.path.expanduser('~/.claude/settings.json')
 home_dir = os.path.expanduser('~')
 
 try:
+    # Load default preferences to determine which hooks to register
+    project_dir = os.environ.get('PROJECT_DIR', '.')
+    prefs_file = os.path.join(project_dir, 'config', 'default_preferences.json')
+    if os.path.exists(prefs_file):
+        with open(prefs_file, 'r', encoding='utf-8') as f:
+            prefs = json.load(f)
+        enabled = {k for k, v in prefs.get('enabled_hooks', {}).items()
+                   if not k.startswith('_') and v is True}
+    else:
+        enabled = {'notification', 'stop', 'subagent_stop'}  # hardcoded fallback
+
     # Read existing settings or create new
     if os.path.exists(settings_file):
         with open(settings_file, 'r', encoding='utf-8') as f:
@@ -456,31 +467,30 @@ try:
     # Determine if we're on Windows
     is_windows = platform.system() == 'Windows' or os.name == 'nt'
 
-    # On Windows, Claude Code executes hooks via CMD/PowerShell
-    # Bash scripts won't work reliably - use Python hook_runner.py instead
-    # On Unix systems, bash scripts work fine
+    # All hook types: Claude Code name -> hook_runner.py argument
+    all_hook_types = {
+        'PreToolUse': 'pretooluse',
+        'PostToolUse': 'posttooluse',
+        'Notification': 'notification',
+        'Stop': 'stop',
+        'UserPromptSubmit': 'userpromptsubmit',
+        'SubagentStop': 'subagent_stop',
+        'PreCompact': 'precompact',
+        'SessionStart': 'session_start',
+        'SessionEnd': 'session_end'
+    }
+
+    hooks_with_matcher = ['PreToolUse', 'PostToolUse']
+    registered = 0
 
     if is_windows:
         # Windows: Use Python hook_runner.py for reliable execution
         hooks_dir = home_dir.replace('\\', '/') + '/.claude/hooks'
         hook_runner = f'{hooks_dir}/hook_runner.py'
 
-        # Hook type names for Python runner
-        hook_types = {
-            'PreToolUse': 'pretooluse',
-            'PostToolUse': 'posttooluse',
-            'Notification': 'notification',
-            'Stop': 'stop',
-            'UserPromptSubmit': 'userpromptsubmit',
-            'SubagentStop': 'subagent_stop',
-            'PreCompact': 'precompact',
-            'SessionStart': 'session_start',
-            'SessionEnd': 'session_end'
-        }
-
-        hooks_with_matcher = ['PreToolUse', 'PostToolUse']
-
-        for hook_name, hook_type in hook_types.items():
+        for hook_name, hook_type in all_hook_types.items():
+            if hook_type not in enabled:
+                continue
             # Use 'py' command which is reliable on Windows
             command = f'py "{hook_runner}" {hook_type}'
 
@@ -497,38 +507,26 @@ try:
                         'hooks': [{'type': 'command', 'command': command}]
                     }
                 ]
+            registered += 1
 
         env_note = "(Windows - Python hooks)"
     else:
-        # Unix: Use Python hook_runner.py for full v4.0 features
-        # (desktop notifications, TTS, stdin context parsing)
-        hook_runner = "~/.claude/hooks/hook_runner.py"
-
-        # Detect python3 command
+        # Unix: Use absolute path and defensive wrapping so a missing
+        # hook_runner.py returns success (0) instead of blocking the user
+        hook_runner = f'{home_dir}/.claude/hooks/hook_runner.py'
         python_cmd = "python3"
 
-        hook_types = {
-            'PreToolUse': 'pretooluse',
-            'PostToolUse': 'posttooluse',
-            'Notification': 'notification',
-            'Stop': 'stop',
-            'UserPromptSubmit': 'userpromptsubmit',
-            'SubagentStop': 'subagent_stop',
-            'PreCompact': 'precompact',
-            'SessionStart': 'session_start',
-            'SessionEnd': 'session_end'
-        }
-
-        hooks_with_matcher = ['PreToolUse', 'PostToolUse']
-
-        for hook_name, hook_type in hook_types.items():
-            command = f'{python_cmd} {hook_runner} {hook_type}'
+        for hook_name, hook_type in all_hook_types.items():
+            if hook_type not in enabled:
+                continue
+            command = f'test -f {hook_runner} && {python_cmd} {hook_runner} {hook_type} || true'
             entry = {
                 'hooks': [{'type': 'command', 'command': command, 'timeout': 10}]
             }
             if hook_name in hooks_with_matcher:
                 entry['matcher'] = ''
             settings['hooks'][hook_name] = [entry]
+            registered += 1
 
         env_note = "(Unix - Python hooks)"
 
@@ -536,7 +534,7 @@ try:
     with open(settings_file, 'w', encoding='utf-8') as f:
         json.dump(settings, f, indent=2, ensure_ascii=False)
 
-    print(f"Configured 9 hooks in settings.json {env_note}")
+    print(f"Configured {registered} hooks in settings.json {env_note}")
     sys.exit(0)
 
 except Exception as e:
@@ -557,75 +555,10 @@ EOF
 step_configure_permissions() {
     print_step "Configuring Permissions"
 
-    if [ -z "$PYTHON_CMD" ]; then
-        print_warning "Python not available, skipping automatic permission configuration"
-        print_info "Please manually add hook permissions to ~/.claude/settings.local.json"
-        return 0
-    fi
-
-    # Backup existing settings.local.json
-    backup_file ~/.claude/settings.local.json
-
-    # Update settings.local.json
-    print_info "Updating settings.local.json..."
-    $PYTHON_CMD << 'EOF'
-import json
-import os
-import sys
-
-settings_local = os.path.expanduser('~/.claude/settings.local.json')
-
-try:
-    # Read existing or create new
-    if os.path.exists(settings_local):
-        with open(settings_local, 'r', encoding='utf-8') as f:
-            settings = json.load(f)
-    else:
-        settings = {}
-
-    # Add allowed tools
-    if 'allowedTools' not in settings:
-        settings['allowedTools'] = []
-
-    # Add permissions for each hook
-    hooks = [
-        '~/.claude/hooks/notification_hook.sh',
-        '~/.claude/hooks/stop_hook.sh',
-        '~/.claude/hooks/pretooluse_hook.sh',
-        '~/.claude/hooks/posttooluse_hook.sh',
-        '~/.claude/hooks/userprompt_hook.sh',
-        '~/.claude/hooks/subagent_hook.sh',
-        '~/.claude/hooks/precompact_hook.sh',
-        '~/.claude/hooks/session_start_hook.sh',
-        '~/.claude/hooks/session_end_hook.sh'
-    ]
-
-    added = 0
-    for hook in hooks:
-        bash_entry = f'Bash({hook})'
-        if bash_entry not in settings['allowedTools']:
-            settings['allowedTools'].append(bash_entry)
-            added += 1
-
-    # Save settings
-    with open(settings_local, 'w', encoding='utf-8') as f:
-        json.dump(settings, f, indent=2, ensure_ascii=False)
-
-    print(f"Added {added} hook permissions")
-    sys.exit(0)
-
-except Exception as e:
-    print(f"Error: {e}", file=sys.stderr)
-    sys.exit(1)
-EOF
-
-    if [ $? -eq 0 ]; then
-        print_success "Permissions configured successfully"
-    else
-        print_error "Failed to configure permissions"
-        print_info "You may need to configure manually"
-        ((ERRORS+=1))
-    fi
+    # Hook commands in settings.json are executed directly by Claude Code's
+    # hook system, not via the Bash tool. Therefore, allowedTools entries for
+    # hook scripts serve no purpose and would only clutter settings.local.json.
+    print_success "No additional permissions needed (hooks run via Claude Code's hook system)"
 }
 
 # Step 8: Initialize configuration

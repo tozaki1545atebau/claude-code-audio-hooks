@@ -183,12 +183,13 @@ sequenceDiagram
 ## Key Files After Installation
 
 ### ~/.claude/settings.json
+Only the 3 default-enabled hooks are registered. Commands use absolute paths and defensive wrapping so a missing `hook_runner.py` returns success instead of blocking the user:
 ```json
 {
   "hooks": {
-    "Notification": [{"hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/hook_runner.py notification", "timeout": 10}]}],
-    "Stop": [{"hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/hook_runner.py stop", "timeout": 10}]}],
-    "SubagentStop": [{"hooks": [{"type": "command", "command": "python3 ~/.claude/hooks/hook_runner.py subagent_stop", "timeout": 10}]}]
+    "Notification": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py notification || true", "timeout": 10}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py stop || true", "timeout": 10}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py subagent_stop || true", "timeout": 10}]}]
   }
 }
 ```
