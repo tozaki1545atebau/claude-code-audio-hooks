@@ -1,17 +1,17 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Complete Installation Script
-# Version: 3.2.0
+# Version: 4.0.2
 # This script handles the complete installation process automatically
 # Now with integrated environment detection, platform fixes, and validation
 # Supports non-interactive mode for Claude Code and automation
 
-set -eo pipefail  # Exit on pipe failures, but continue on errors for better handling
+set -eo pipefail  # Exit on errors (-e) and pipe failures (pipefail)
 
 # =============================================================================
 # CONFIGURATION
 # =============================================================================
 
-VERSION="3.3.5"
+VERSION="4.0.2"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -492,21 +492,14 @@ try:
             if hook_type not in enabled:
                 continue
             # Use 'py' command which is reliable on Windows
-            command = f'py "{hook_runner}" {hook_type}'
+            command = f'py "{hook_runner}" {hook_type} || true'
 
+            entry = {
+                'hooks': [{'type': 'command', 'command': command, 'timeout': 10}]
+            }
             if hook_name in hooks_with_matcher:
-                settings['hooks'][hook_name] = [
-                    {
-                        'matcher': '',
-                        'hooks': [{'type': 'command', 'command': command}]
-                    }
-                ]
-            else:
-                settings['hooks'][hook_name] = [
-                    {
-                        'hooks': [{'type': 'command', 'command': command}]
-                    }
-                ]
+                entry['matcher'] = ''
+            settings['hooks'][hook_name] = [entry]
             registered += 1
 
         env_note = "(Windows - Python hooks)"
@@ -632,7 +625,7 @@ step_run_tests() {
     # Test 2: Check settings
     print_info "Test 2: Checking settings configuration..."
     if [ -f ~/.claude/settings.json ]; then
-        if grep -q "notification_hook.sh" ~/.claude/settings.json 2>/dev/null; then
+        if grep -q "hook_runner.py" ~/.claude/settings.json 2>/dev/null; then
             print_success "Settings: Hooks configured"
             ((tests_passed+=1))
         else
@@ -779,7 +772,11 @@ step_next_steps() {
         log "     ${CYAN}bash scripts/configure.sh${RESET}"
         log ""
         log "  5. Check logs if issues:"
-        log "     ${CYAN}cat /tmp/claude_hooks_log/hook_triggers.log${RESET}"
+        if is_windows_env; then
+            log "     ${CYAN}cat \$TEMP/claude_audio_hooks_queue/logs/hook_triggers.log${RESET}"
+        else
+            log "     ${CYAN}cat /tmp/claude_audio_hooks_queue/logs/hook_triggers.log${RESET}"
+        fi
         log ""
     else
         print_warning "Installation completed with errors"
@@ -802,7 +799,11 @@ step_next_steps() {
     log ""
     log "  Test audio:      ${CYAN}bash scripts/test-audio.sh${RESET}"
     log "  Configure:       ${CYAN}bash scripts/configure.sh${RESET}"
-    log "  View triggers:   ${CYAN}cat /tmp/claude_hooks_log/hook_triggers.log${RESET}"
+    if is_windows_env; then
+        log "  View triggers:   ${CYAN}cat \$TEMP/claude_audio_hooks_queue/logs/hook_triggers.log${RESET}"
+    else
+        log "  View triggers:   ${CYAN}cat /tmp/claude_audio_hooks_queue/logs/hook_triggers.log${RESET}"
+    fi
     log "  Uninstall:       ${CYAN}bash scripts/uninstall.sh${RESET}"
     log ""
 

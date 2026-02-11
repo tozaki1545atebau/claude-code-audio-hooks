@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.0.0 | **Last Updated:** 2026-02-10
+> **Version:** 4.0.2 | **Last Updated:** 2026-02-11
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -328,6 +328,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.0.2 | 2026-02-11 | Fix Windows installer hook filtering, uninstaller hook_runner.py detection, defensive wrapping |
 | 4.0.0 | 2026-02-10 | Quick Setup (Lite tier), desktop notifications, TTS, context-aware alerts |
 | 3.3.5 | 2025-12-27 | UTF-8 BOM fix for Windows |
 | 3.3.4 | 2025-12-22 | Windows PowerShell installer, diagnostic tool, debug logging |

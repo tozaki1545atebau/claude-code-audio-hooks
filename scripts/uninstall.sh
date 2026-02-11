@@ -36,6 +36,8 @@ HOOK_SCRIPTS=(
     "precompact_hook.sh"
     "session_start_hook.sh"
     "session_end_hook.sh"
+    "hook_runner.py"
+    ".project_path"
 )
 
 # Hook events to remove from settings.json
@@ -190,7 +192,7 @@ for script in "${HOOK_SCRIPTS[@]}"; do
     if [ -f "$HOOKS_DIR/$script" ]; then
         rm "$HOOKS_DIR/$script"
         echo -e "${GREEN}✓${NC} Removed $script"
-        ((removed++))
+        ((removed += 1))
     fi
 done
 
@@ -204,7 +206,7 @@ fi
 if [ -f "$HOOKS_DIR/play_audio.sh" ]; then
     rm "$HOOKS_DIR/play_audio.sh"
     echo -e "${GREEN}✓${NC} Removed legacy play_audio.sh"
-    ((removed++))
+    ((removed += 1))
 fi
 
 if [ $removed -gt 0 ]; then
@@ -247,7 +249,8 @@ try:
         "notification_hook.sh", "stop_hook.sh", "pretooluse_hook.sh",
         "posttooluse_hook.sh", "userprompt_hook.sh", "subagent_hook.sh",
         "precompact_hook.sh", "session_start_hook.sh", "session_end_hook.sh",
-        "play_audio.sh"  # Legacy v1.0
+        "play_audio.sh",  # Legacy v1.0
+        "hook_runner.py"  # v3.0+ Python runner
     ]
 
     removed_count = 0
@@ -261,7 +264,7 @@ try:
                 settings['hooks'][event_name] = [
                     hook_entry for hook_entry in settings['hooks'][event_name]
                     if not any(
-                        h.get('command', '').endswith(script)
+                        script in h.get('command', '')
                         for h in hook_entry.get('hooks', [])
                         for script in hook_scripts
                     )
@@ -314,7 +317,8 @@ try:
         "notification_hook.sh", "stop_hook.sh", "pretooluse_hook.sh",
         "posttooluse_hook.sh", "userprompt_hook.sh", "subagent_hook.sh",
         "precompact_hook.sh", "session_start_hook.sh", "session_end_hook.sh",
-        "play_audio.sh"  # Legacy v1.0
+        "play_audio.sh",  # Legacy v1.0
+        "hook_runner.py"  # v3.0+ Python runner
     ]
 
     removed_count = 0
@@ -406,8 +410,9 @@ echo ""
 echo -e "${BLUE}${BOLD}Cleaning up temporary files...${NC}\n"
 
 # Remove lock file and queue directory
-rm -f /tmp/claude_audio_hooks.lock
-rm -rf /tmp/claude_audio_hooks_queue
+_tmp_dir="${TEMP:-${TMP:-/tmp}}"
+rm -f "$_tmp_dir/claude_audio_hooks.lock"
+rm -rf "$_tmp_dir/claude_audio_hooks_queue"
 echo -e "${GREEN}✓${NC} Removed temporary files"
 
 echo ""

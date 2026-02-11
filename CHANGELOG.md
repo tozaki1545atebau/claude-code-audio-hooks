@@ -5,6 +5,50 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.0.2] - 2026-02-11
+
+### Bug Fixes: Installer & Uninstaller Correctness
+
+Fixes multiple bugs that prevented correct hook registration on Windows and blocked uninstallation of modern hook_runner.py-based entries.
+
+### Fixed
+
+#### 1. Windows branch in `install-complete.sh` missing defensive wrapping
+- **Bug**: Windows branch registered hooks without `|| true` fallback or `timeout`
+- **Impact**: A missing `hook_runner.py` would cause Claude Code hook errors instead of silent fallback
+- **Fix**: Added `|| true` to command and `timeout: 10` to hook entries, matching the Unix branch
+
+#### 2. `install-windows.ps1` registered all 9 hooks regardless of config
+- **Bug**: PowerShell installer ignored `enabled_hooks` preferences and always registered all 9 hooks
+- **Impact**: Users heard audio for every tool call (PreToolUse/PostToolUse), making it very noisy
+- **Fix**: Reads `user_preferences.json` (or `default_preferences.json`) and only registers enabled hooks
+- **Also fixed**: Added `|| true` and `timeout = 10` to all hook commands
+- **Also fixed**: Settings.json now written as UTF-8 without BOM (was using `Out-File -Encoding UTF8` which adds BOM on PS 5.x)
+
+#### 3. `uninstall.sh` could not detect or remove hook_runner.py entries
+- **Bug**: `HOOK_SCRIPTS` array and Python `hook_scripts` list did not include `hook_runner.py`
+- **Bug**: `endswith(script)` matching failed on commands like `py "path/hook_runner.py" stop || true` (command ends with `|| true`, not with the script name)
+- **Impact**: Uninstaller left hook entries in `settings.json` and `hook_runner.py`/`.project_path` files on disk
+- **Fix**: Added `hook_runner.py` and `.project_path` to removal lists; changed `endswith` to `in` for substring matching
+
+#### 4. `uninstall.sh` temp dir hardcoded to `/tmp/`
+- **Bug**: `rm -f /tmp/claude_audio_hooks.lock` fails on Windows (Git Bash) where temp is `$TEMP`
+- **Fix**: Uses `${TEMP:-${TMP:-/tmp}}` for cross-platform temp directory
+
+#### 5. `uninstall.sh` `((removed++))` crashes under `set -e`
+- **Bug**: `((removed++))` returns exit code 1 when `removed=0`, causing `set -e` to terminate the script
+- **Fix**: Changed to `((removed += 1))` which always returns 0
+
+#### 6. `install-complete.sh` verification grep matched wrong pattern
+- **Bug**: Test checked for `notification_hook.sh` in settings.json, but modern installs use `hook_runner.py`
+- **Fix**: Changed grep pattern to `hook_runner.py`
+
+#### 7. `install-complete.sh` log paths incorrect
+- **Bug**: Displayed `/tmp/claude_hooks_log/hook_triggers.log` which is not the actual log path
+- **Fix**: Shows platform-appropriate path (`$TEMP/claude_audio_hooks_queue/logs/` on Windows, `/tmp/claude_audio_hooks_queue/logs/` on Unix)
+
+---
+
 ## [3.3.5] - 2026-02-04
 
 ### 🐛 Bug Fix: UTF-8 BOM Issue on Windows

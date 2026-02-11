@@ -22,7 +22,7 @@
     Automated installation without prompts.
 
 .NOTES
-    Version: 3.3.4
+    Version: 4.0.2
     Requires: Python 3.6+, Claude Code CLI
 #>
 
@@ -35,7 +35,7 @@ param(
 # CONFIGURATION
 # =============================================================================
 
-$Version = "3.3.5"
+$Version = "4.0.2"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
@@ -304,6 +304,27 @@ function Step-ConfigureSettings {
     # Configure hooks using Python runner
     $hookRunnerPath = ($HooksDir.Replace('\', '/')) + "/hook_runner.py"
 
+    # Load preferences to determine which hooks are enabled
+    $defaultPrefs = Join-Path $ProjectDir "config\default_preferences.json"
+    $userPrefs = Join-Path $ProjectDir "config\user_preferences.json"
+    $prefsFile = if (Test-Path $userPrefs) { $userPrefs } elseif (Test-Path $defaultPrefs) { $defaultPrefs } else { $null }
+
+    $enabledHooks = @{}
+    if ($prefsFile) {
+        try {
+            $prefs = Get-Content $prefsFile -Raw | ConvertFrom-Json
+            $prefs.enabled_hooks.PSObject.Properties | ForEach-Object {
+                if (-not $_.Name.StartsWith('_') -and $_.Value -eq $true) {
+                    $enabledHooks[$_.Name] = $true
+                }
+            }
+        } catch {
+            $enabledHooks = @{ 'notification' = $true; 'stop' = $true; 'subagent_stop' = $true }
+        }
+    } else {
+        $enabledHooks = @{ 'notification' = $true; 'stop' = $true; 'subagent_stop' = $true }
+    }
+
     $hookTypes = @{
         'Notification' = 'notification'
         'Stop' = 'stop'
@@ -317,17 +338,20 @@ function Step-ConfigureSettings {
     }
 
     $hooksWithMatcher = @('PreToolUse', 'PostToolUse')
+    $registered = 0
 
     foreach ($hookName in $hookTypes.Keys) {
         $hookType = $hookTypes[$hookName]
-        $command = "py `"$hookRunnerPath`" $hookType"
+        if (-not $enabledHooks.ContainsKey($hookType)) { continue }
+
+        $command = "py `"$hookRunnerPath`" $hookType || true"
 
         if ($hooksWithMatcher -contains $hookName) {
             $hookConfig = @(
                 @{
                     matcher = ''
                     hooks = @(
-                        @{ type = 'command'; command = $command }
+                        @{ type = 'command'; command = $command; timeout = 10 }
                     )
                 }
             )
@@ -335,7 +359,7 @@ function Step-ConfigureSettings {
             $hookConfig = @(
                 @{
                     hooks = @(
-                        @{ type = 'command'; command = $command }
+                        @{ type = 'command'; command = $command; timeout = 10 }
                     )
                 }
             )
@@ -346,11 +370,13 @@ function Step-ConfigureSettings {
             $settings.hooks.PSObject.Properties.Remove($hookName)
         }
         $settings.hooks | Add-Member -NotePropertyName $hookName -NotePropertyValue $hookConfig
+        $registered++
     }
 
-    # Save settings
-    $settings | ConvertTo-Json -Depth 10 | Out-File -FilePath $settingsFile -Encoding UTF8
-    Write-Success "Configured 9 hooks in settings.json"
+    # Save settings (UTF-8 without BOM)
+    $jsonContent = $settings | ConvertTo-Json -Depth 10
+    [System.IO.File]::WriteAllText($settingsFile, $jsonContent, [System.Text.UTF8Encoding]::new($false))
+    Write-Success "Configured $registered hook(s) in settings.json"
 }
 
 function Step-InitializeConfig {
