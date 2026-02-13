@@ -19,6 +19,7 @@ https://github.com/user-attachments/assets/e314be82-8c88-4026-997e-d25168ac9f5c
 ---
 
 ## Installation Guide
+⚠ *This is an installation demonstration of the older version, so the installation speed is relatively slow. The new version now installs extremely quickly, giving you a lightning-fast experience!* 😉
 
 https://github.com/user-attachments/assets/a9919363-f76c-4dd2-9141-e1c681573d75
 
