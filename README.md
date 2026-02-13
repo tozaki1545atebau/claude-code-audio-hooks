@@ -886,25 +886,26 @@ Customize each hook individually - use chimes for some, voice for others!
 
 ### **Quick Start: Switch to Chimes**
 
-Want to use chimes instead of voice? Just copy the pre-configured example:
+Want to use chimes instead of voice? Two ways:
 
+**Method 1: One command** (recommended)
 ```bash
-cd ~/claude-code-audio-hooks
-
-# Backup your current config (optional)
-cp config/user_preferences.json config/user_preferences.backup.json
-
-# Switch to all-chimes configuration
-cp config/example_preferences_chimes.json config/user_preferences.json
-
-# Test the new sounds
-bash scripts/test-audio.sh
-
-# Restart Claude Code
-# Close and reopen your terminal
+bash scripts/configure.sh --theme custom
 ```
 
-That's it! Now all your notifications will use modern UI chimes instead of voice.
+**Method 2: Edit one line in config** (`config/user_preferences.json`)
+```json
+"audio_theme": "custom"
+```
+Change `"default"` to `"custom"` and restart Claude Code.
+
+**Switch back to voice anytime:**
+```bash
+bash scripts/configure.sh --theme default
+```
+Or change `"audio_theme"` back to `"default"` in the config file.
+
+> **Tip for Claude Code users:** Just tell Claude Code: *"Switch my audio hooks to chime sounds"* and it will make the change for you!
 
 ---
 
@@ -959,19 +960,24 @@ All narrated by Jessica voice from ElevenLabs:
 | `team-task-done.mp3` | task_completed | "Team task completed." |
 
 #### **Chime Files** (`audio/custom/`)
-Modern UI sound effects:
+Modern UI sound effects (no voice):
 
 | File | Hook | Description |
 |------|------|-------------|
-| `chime-notification-urgent.mp3` | notification | Attention chime for permissions |
-| `chime-task-complete.mp3` | stop | Pleasant completion sound |
-| `chime-subagent-complete.mp3` | subagent | Background task done chime |
-| `chime-task-starting.mp3` | pretooluse | Brief startup chime |
-| `chime-task-progress.mp3` | posttooluse | Progress indicator chime |
-| `chime-prompt-received.mp3` | userprompt | Prompt acknowledgment chime |
-| `chime-notification-info.mp3` | precompact | Info notification chime |
-| `chime-session-start.mp3` | session_start | Welcome chime |
-| `chime-session-end.mp3` | session_end | Goodbye chime |
+| `chime-notification-urgent.mp3` | notification | Urgent alarm, sharp rising tones |
+| `chime-task-complete.mp3` | stop | Triumphant success jingle |
+| `chime-task-starting.mp3` | pretooluse | Gentle activation whoosh |
+| `chime-task-progress.mp3` | posttooluse | Subtle confirmation pop |
+| `chime-tool-failed.mp3` | posttoolusefailure | Error descending buzzer |
+| `chime-prompt-received.mp3` | userpromptsubmit | Soft bubble ping |
+| `chime-subagent-complete.mp3` | subagent_stop | Achievement sparkle ding |
+| `chime-subagent-start.mp3` | subagent_start | Futuristic launch whoosh |
+| `chime-notification-info.mp3` | precompact | Gentle bell ding |
+| `chime-session-start.mp3` | session_start | Welcoming opening melody |
+| `chime-session-end.mp3` | session_end | Peaceful closing melody |
+| `chime-permission-request.mp3` | permission_request | Security doorbell tone |
+| `chime-teammate-idle.mp3` | teammate_idle | Sleepy standby ping |
+| `chime-team-task-done.mp3` | task_completed | Team victory fanfare |
 
 ---
 
@@ -1039,18 +1045,61 @@ bash scripts/test-audio.sh
 
 ### **Using Custom Audio Files**
 
-#### **Option 1: Replace Default Audio**
+#### **Option 1: Replace Files Directly (Easiest)**
+
+The simplest way to use your own audio: just replace the files in `audio/default/` with your own MP3 files, **keeping the same filenames**:
 
 ```bash
-# Copy your MP3 to the project
-cp /path/to/your-audio.mp3 ~/claude-code-audio-hooks/audio/custom/my-notification.mp3
+cd ~/claude-code-audio-hooks
 
-# Update configuration
-bash scripts/configure.sh
-# Or edit config/user_preferences.json manually
+# Example: Replace the task completion sound with your own
+cp /path/to/my-completion-sound.mp3 audio/default/task-complete.mp3
+
+# Example: Replace the notification sound
+cp /path/to/my-alert.mp3 audio/default/notification-urgent.mp3
+
+# Test your changes
+bash scripts/test-audio.sh
 ```
 
-#### **Option 2: Create Audio with ElevenLabs**
+**Required filenames** (replace any or all):
+| Filename | Hook |
+|----------|------|
+| `notification-urgent.mp3` | notification |
+| `task-complete.mp3` | stop |
+| `task-starting.mp3` | pretooluse |
+| `task-progress.mp3` | posttooluse |
+| `tool-failed.mp3` | posttoolusefailure |
+| `prompt-received.mp3` | userpromptsubmit |
+| `subagent-complete.mp3` | subagent_stop |
+| `subagent-start.mp3` | subagent_start |
+| `notification-info.mp3` | precompact |
+| `session-start.mp3` | session_start |
+| `session-end.mp3` | session_end |
+| `permission-request.mp3` | permission_request |
+| `teammate-idle.mp3` | teammate_idle |
+| `team-task-done.mp3` | task_completed |
+
+No configuration changes needed - just swap the files and restart Claude Code!
+
+#### **Option 2: Switch Between Voice and Chimes**
+
+Use the built-in audio themes:
+
+```bash
+# Switch to chimes (no voice)
+bash scripts/configure.sh --theme custom
+
+# Switch back to voice
+bash scripts/configure.sh --theme default
+```
+
+Or simply change `"audio_theme"` in `config/user_preferences.json`:
+```json
+"audio_theme": "custom"
+```
+
+#### **Option 3: Create Audio with ElevenLabs**
 
 **ElevenLabs** provides AI text-to-speech with natural voices.
 
@@ -1064,20 +1113,16 @@ bash scripts/configure.sh
    - Notification: "Attention! Claude needs your authorization."
    - Stop: "Task completed successfully!"
    - SubagentStop: "Background task finished!"
-   - PreToolUse: "Executing tool..."
-   - PostToolUse: "Tool execution complete."
-   - UserPromptSubmit: "Prompt received."
-   - PreCompact: "Compacting conversation history..."
-   - SessionStart: "Claude Code session started."
-   - SessionEnd: "Claude Code session ended."
+   - PermissionRequest: "Permission required. Please review the action."
+   - PostToolUseFailure: "Warning! Tool execution failed."
+   - SubagentStart: "Background task starting."
+   - TeammateIdle: "Teammate is now idle."
+   - TaskCompleted: "Team task completed."
+   - *(and other hooks as needed)*
 6. **Generate and download** MP3 files
-7. **Copy to project:**
+7. **Replace in project** (keep filenames):
    ```bash
-   cp ~/Downloads/notification.mp3 ~/claude-code-audio-hooks/audio/custom/
-   ```
-8. **Update configuration:**
-   ```bash
-   bash scripts/configure.sh
+   cp ~/Downloads/my-notification.mp3 ~/claude-code-audio-hooks/audio/default/notification-urgent.mp3
    ```
 
 ### **Audio File Specifications**

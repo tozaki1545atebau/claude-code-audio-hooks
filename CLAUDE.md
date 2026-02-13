@@ -78,7 +78,8 @@ claude-code-audio-hooks/
 ├── CHANGELOG.md                 # Version history
 │
 ├── audio/
-│   └── default/                 # Audio files (14 MP3 files)
+│   ├── default/                 # Voice audio files (14 MP3 files, ElevenLabs Jessica)
+│   └── custom/                  # Chime audio files (14 MP3 files, non-voice sound effects)
 │       ├── notification-urgent.mp3  # Authorization requests
 │       ├── task-complete.mp3        # Task completion (Stop)
 │       ├── session-start.mp3        # Session begins
@@ -289,6 +290,31 @@ python scripts/diagnose.py -v --test-audio
 | Windows | `%TEMP%\claude_audio_hooks_queue\logs\` |
 | Linux/macOS | `/tmp/claude_audio_hooks_queue/logs/` |
 | WSL | `/tmp/claude_audio_hooks_queue/logs/` |
+
+## Audio Customization
+
+### Two Built-in Audio Themes
+- **default** (`audio/default/`): 14 professional ElevenLabs Jessica voice recordings
+- **custom** (`audio/custom/`): 14 modern UI sound effects (non-voice chimes)
+
+### Switching Themes (Two Methods)
+
+**Method 1: Command line**
+```bash
+bash scripts/configure.sh --theme custom    # Switch to chimes
+bash scripts/configure.sh --theme default   # Switch back to voice
+```
+
+**Method 2: Edit one line** in `config/user_preferences.json`
+```json
+"audio_theme": "custom"
+```
+Change `"default"` to `"custom"` (or vice versa), then restart Claude Code.
+
+### Using Custom Audio Files
+Users can replace MP3 files in `audio/default/` with their own. **Keep the same filenames** - no configuration changes needed. Just swap files and restart Claude Code.
+
+---
 
 ## For AI Assistants: Installation Steps
 

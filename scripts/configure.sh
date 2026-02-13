@@ -42,6 +42,7 @@ HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "posttoolusefailure
 HOOK_ENABLED=()
 HOOK_DESCRIPTIONS=()
 
+
 # Initialize descriptions
 init_descriptions() {
     HOOK_DESCRIPTIONS[0]="⚠️  Authorization/confirmation requests (CRITICAL)"
@@ -126,6 +127,7 @@ load_configuration() {
         local enabled=$(python3 -c "import json; config=json.load(open('$CONFIG_FILE')); print(str(config.get('enabled_hooks', {}).get('$hook', False)).lower())")
         HOOK_ENABLED[$i]=$([[ "$enabled" == "true" ]] && echo "true" || echo "false")
     done
+
 }
 
 save_configuration() {
@@ -336,6 +338,66 @@ test_audio_files() {
 }
 
 #=============================================================================
+# AUDIO THEME SWITCHING
+#=============================================================================
+
+apply_theme() {
+    local theme=$1
+    python3 << PYTHON_SCRIPT
+import json
+
+config_file = "$CONFIG_FILE"
+theme = "$theme"
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+except:
+    config = {}
+
+config['audio_theme'] = theme
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=2)
+
+print("OK")
+PYTHON_SCRIPT
+}
+
+# Programmatic theme switching
+cmd_theme() {
+    local theme=$1
+    if [ -z "$theme" ]; then
+        echo -e "${RED}Error: Theme name required${NC}" >&2
+        echo "Usage: $0 --theme <default|custom>" >&2
+        echo "  default - Professional ElevenLabs voice recordings (audio/default/)" >&2
+        echo "  custom  - Modern UI sound effects, no voice (audio/custom/)" >&2
+        exit 1
+    fi
+
+    if [[ "$theme" != "default" && "$theme" != "custom" ]]; then
+        echo -e "${RED}Error: Unknown theme '$theme'${NC}" >&2
+        echo "Available themes: default, custom" >&2
+        echo "  default - Voice recordings (audio/default/)" >&2
+        echo "  custom  - Non-voice chimes (audio/custom/)" >&2
+        exit 1
+    fi
+
+    if apply_theme "$theme"; then
+        echo -e "${GREEN}✓${NC} Audio theme set to: ${BOLD}$theme${NC}"
+        if [[ "$theme" == "default" ]]; then
+            echo -e "  Using voice recordings from audio/default/"
+        else
+            echo -e "  Using non-voice chimes from audio/custom/"
+        fi
+        echo -e "${YELLOW}Remember to restart Claude Code to apply changes${NC}"
+    else
+        echo -e "${RED}✗${NC} Failed to switch theme" >&2
+        exit 1
+    fi
+}
+
+#=============================================================================
 # MAIN LOOP
 #=============================================================================
 
@@ -437,6 +499,12 @@ ${CYAN}PROGRAMMATIC MODE${NC} (with arguments):
     Set hook to specific value (true/false)
     Example: $0 --set notification=true --set pretooluse=false
 
+  ${BOLD}--theme <default|custom>${NC}
+    Switch audio theme for all hooks at once
+    default - Professional ElevenLabs voice recordings (audio/default/)
+    custom  - Modern UI sound effects, no voice (audio/custom/)
+    Example: $0 --theme custom
+
   ${BOLD}--reset${NC}
     Reset to recommended defaults
     (Enables: notification, stop, subagent_stop, permission_request; Disables: all others)
@@ -452,6 +520,12 @@ ${CYAN}AVAILABLE HOOKS${NC}:
   teammate_idle, task_completed
 
 ${CYAN}EXAMPLES${NC}:
+  # Switch to non-voice chime sounds
+  $0 --theme custom
+
+  # Switch back to voice recordings
+  $0 --theme default
+
   # Enable multiple hooks at once
   $0 --enable notification stop subagent_stop
 
@@ -726,6 +800,11 @@ process_arguments() {
                 done
                 cmd_set "${assignments[@]}"
                 continue
+                ;;
+            --theme)
+                shift
+                cmd_theme "$1"
+                exit 0
                 ;;
             --reset)
                 cmd_reset

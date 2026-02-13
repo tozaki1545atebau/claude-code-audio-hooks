@@ -5,6 +5,9 @@
 
   "version": "2.0.0",
 
+  "_comment_audio_theme": "Audio theme: 'default' for voice recordings, 'custom' for non-voice chimes. Change this one line to switch all audio.",
+  "audio_theme": "default",
+
   "enabled_hooks": {
     "_comment_notification": "Plays when Claude needs authorization or plan confirmation - HIGHLY RECOMMENDED",
     "notification": true,

@@ -323,27 +323,60 @@ def is_hook_enabled(hook_type: str) -> bool:
     return result
 
 
+CUSTOM_AUDIO_FILES = {
+    "notification": "chime-notification-urgent.mp3",
+    "stop": "chime-task-complete.mp3",
+    "pretooluse": "chime-task-starting.mp3",
+    "posttooluse": "chime-task-progress.mp3",
+    "userpromptsubmit": "chime-prompt-received.mp3",
+    "subagent_stop": "chime-subagent-complete.mp3",
+    "precompact": "chime-notification-info.mp3",
+    "session_start": "chime-session-start.mp3",
+    "session_end": "chime-session-end.mp3",
+    "permission_request": "chime-permission-request.mp3",
+    "posttoolusefailure": "chime-tool-failed.mp3",
+    "subagent_start": "chime-subagent-start.mp3",
+    "teammate_idle": "chime-teammate-idle.mp3",
+    "task_completed": "chime-team-task-done.mp3",
+}
+
+
 def get_audio_file(hook_type: str) -> Optional[Path]:
-    """Get the audio file path for a hook type."""
+    """Get the audio file path for a hook type.
+
+    Resolution order:
+    1. Per-hook override in audio_files config
+    2. audio_theme setting ("default" or "custom")
+    3. Fallback to audio/default/
+    """
     config = load_config()
-
-    # Get configured audio file or use default
     default_file = DEFAULT_AUDIO_FILES.get(hook_type, "notification-info.mp3")
+
+    # 1. Check per-hook override in audio_files config
     audio_files = config.get("audio_files", {})
-    audio_path = audio_files.get(hook_type, f"default/{default_file}")
+    if hook_type in audio_files:
+        override_path = AUDIO_DIR / audio_files[hook_type]
+        if override_path.exists():
+            log_debug(f"Audio file for {hook_type} (override): {override_path}")
+            return override_path
 
-    # Build full path
-    full_path = AUDIO_DIR / audio_path
+    # 2. Use audio_theme setting
+    theme = config.get("audio_theme", "default")
+    if theme == "custom":
+        custom_file = CUSTOM_AUDIO_FILES.get(hook_type, default_file)
+        theme_path = AUDIO_DIR / "custom" / custom_file
+    else:
+        theme_path = AUDIO_DIR / "default" / default_file
 
-    if full_path.exists():
-        log_debug(f"Audio file for {hook_type}: {full_path}")
-        return full_path
+    if theme_path.exists():
+        log_debug(f"Audio file for {hook_type} (theme={theme}): {theme_path}")
+        return theme_path
 
-    # Try default location
-    default_path = AUDIO_DIR / "default" / default_file
-    if default_path.exists():
-        log_debug(f"Using default audio for {hook_type}: {default_path}")
-        return default_path
+    # 3. Fallback to default
+    fallback_path = AUDIO_DIR / "default" / default_file
+    if fallback_path.exists():
+        log_debug(f"Using fallback audio for {hook_type}: {fallback_path}")
+        return fallback_path
 
     log_debug(f"No audio file found for {hook_type}")
     return None
