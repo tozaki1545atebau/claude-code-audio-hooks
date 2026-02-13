@@ -31,7 +31,10 @@
     "session_start": false,
 
     "_comment_session_end": "❌ DISABLED - Would play when session ends (not needed)",
-    "session_end": false
+    "session_end": false,
+
+    "_comment_permission_request": "Plays when permission dialog appears ('Allow this bash command?') - HIGHLY RECOMMENDED",
+    "permission_request": true
   },
 
   "audio_files": {
@@ -45,7 +48,8 @@
     "subagent_stop": "default/subagent-complete.mp3",
     "precompact": "default/notification-info.mp3",
     "session_start": "default/session-start.mp3",
-    "session_end": "default/session-end.mp3"
+    "session_end": "default/session-end.mp3",
+    "permission_request": "default/notification-urgent.mp3"
   },
 
   "playback_settings": {
@@ -73,7 +77,8 @@
       "notification": "Attention, authorization needed",
       "subagent_stop": "Background task finished",
       "pretooluse": "Running tool",
-      "posttooluse": "Tool finished"
+      "posttooluse": "Tool finished",
+      "permission_request": "Permission required"
     }
   },
 

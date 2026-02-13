@@ -451,7 +451,7 @@ try:
         enabled = {k for k, v in prefs.get('enabled_hooks', {}).items()
                    if not k.startswith('_') and v is True}
     else:
-        enabled = {'notification', 'stop', 'subagent_stop'}  # hardcoded fallback
+        enabled = {'notification', 'stop', 'subagent_stop', 'permission_request'}  # hardcoded fallback
 
     # Read existing settings or create new
     if os.path.exists(settings_file):
@@ -477,10 +477,11 @@ try:
         'SubagentStop': 'subagent_stop',
         'PreCompact': 'precompact',
         'SessionStart': 'session_start',
-        'SessionEnd': 'session_end'
+        'SessionEnd': 'session_end',
+        'PermissionRequest': 'permission_request'
     }
 
-    hooks_with_matcher = ['PreToolUse', 'PostToolUse']
+    hooks_with_matcher = ['PreToolUse', 'PostToolUse', 'PermissionRequest']
     registered = 0
 
     if is_windows:

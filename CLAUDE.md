@@ -26,7 +26,7 @@ Zero dependencies, zero Python. Single command:
 ```bash
 curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
 ```
-Gives: desktop notifications + system sounds for Stop, Notification, SubagentStop hooks.
+Gives: desktop notifications + system sounds for Stop, Notification, SubagentStop, PermissionRequest hooks.
 
 ### Full Install (Standard/Pro)
 
@@ -128,6 +128,7 @@ graph TD
         H7[UserPromptSubmit] -->|"User input"| A7[user-prompt.mp3]
         H8[SubagentStop] -->|"Background done"| A8[subagent-complete.mp3]
         H9[PreCompact] -->|"Compacting"| A9[compact.mp3]
+        H10[PermissionRequest] -->|"Permission dialog"| A10[notification-urgent.mp3]
     end
 ```
 
@@ -136,6 +137,7 @@ graph TD
 | `Notification` | Authorization requests | notification.mp3 | **Enable** |
 | `Stop` | Task completion | task-complete.mp3 | **Enable** |
 | `SubagentStop` | Background task done | subagent-complete.mp3 | **Enable** |
+| `PermissionRequest` | Permission dialog appears | notification-urgent.mp3 | **Enable** |
 | `SessionStart` | New session begins | session-start.mp3 | Optional |
 | `SessionEnd` | Session closes | session-end.mp3 | Optional |
 | `PreToolUse` | Before each tool | tool-start.mp3 | Disable (noisy) |
@@ -183,13 +185,14 @@ sequenceDiagram
 ## Key Files After Installation
 
 ### ~/.claude/settings.json
-Only the 3 default-enabled hooks are registered. Commands use absolute paths and defensive wrapping so a missing `hook_runner.py` returns success instead of blocking the user:
+The 4 default-enabled hooks are registered. Commands use absolute paths and defensive wrapping so a missing `hook_runner.py` returns success instead of blocking the user:
 ```json
 {
   "hooks": {
     "Notification": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py notification || true", "timeout": 10}]}],
     "Stop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py stop || true", "timeout": 10}]}],
-    "SubagentStop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py subagent_stop || true", "timeout": 10}]}]
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py subagent_stop || true", "timeout": 10}]}],
+    "PermissionRequest": [{"matcher": "", "hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py permission_request || true", "timeout": 10}]}]
   }
 }
 ```
@@ -207,6 +210,7 @@ D:/github_repository/claude-code-audio-hooks
     "notification": true,
     "stop": true,
     "subagent_stop": true,
+    "permission_request": true,
     "session_start": false,
     "session_end": false,
     "pretooluse": false,
@@ -222,7 +226,8 @@ D:/github_repository/claude-code-audio-hooks
     "enabled": false,
     "messages": {
       "stop": "Task completed",
-      "notification": "Attention, authorization needed"
+      "notification": "Attention, authorization needed",
+      "permission_request": "Permission required"
     }
   }
 }

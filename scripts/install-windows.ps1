@@ -319,10 +319,10 @@ function Step-ConfigureSettings {
                 }
             }
         } catch {
-            $enabledHooks = @{ 'notification' = $true; 'stop' = $true; 'subagent_stop' = $true }
+            $enabledHooks = @{ 'notification' = $true; 'stop' = $true; 'subagent_stop' = $true; 'permission_request' = $true }
         }
     } else {
-        $enabledHooks = @{ 'notification' = $true; 'stop' = $true; 'subagent_stop' = $true }
+        $enabledHooks = @{ 'notification' = $true; 'stop' = $true; 'subagent_stop' = $true; 'permission_request' = $true }
     }
 
     $hookTypes = @{
@@ -335,9 +335,10 @@ function Step-ConfigureSettings {
         'PreCompact' = 'precompact'
         'SessionStart' = 'session_start'
         'SessionEnd' = 'session_end'
+        'PermissionRequest' = 'permission_request'
     }
 
-    $hooksWithMatcher = @('PreToolUse', 'PostToolUse')
+    $hooksWithMatcher = @('PreToolUse', 'PostToolUse', 'PermissionRequest')
     $registered = 0
 
     foreach ($hookName in $hookTypes.Keys) {

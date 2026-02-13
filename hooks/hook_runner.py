@@ -8,7 +8,8 @@ Usage:
     python hook_runner.py <hook_type>
 
 Hook types: notification, stop, pretooluse, posttooluse, userpromptsubmit,
-            subagent_stop, precompact, session_start, session_end
+            subagent_stop, precompact, session_start, session_end,
+            permission_request
 
 Environment Variables:
     CLAUDE_HOOKS_DEBUG=1    Enable debug logging
@@ -270,6 +271,7 @@ DEFAULT_AUDIO_FILES = {
     "precompact": "notification-info.mp3",
     "session_start": "session-start.mp3",
     "session_end": "session-end.mp3",
+    "permission_request": "notification-urgent.mp3",
 }
 
 # =============================================================================
@@ -301,7 +303,7 @@ def is_hook_enabled(hook_type: str) -> bool:
     config = load_config()
 
     # Default enabled hooks
-    default_enabled = {"notification", "stop", "subagent_stop"}
+    default_enabled = {"notification", "stop", "subagent_stop", "permission_request"}
 
     enabled_hooks = config.get("enabled_hooks", {})
 
@@ -699,6 +701,9 @@ def get_notification_context(hook_type: str, stdin_data: dict) -> str:
         return "Compacting context"
     elif hook_type == "userpromptsubmit":
         return "Prompt received"
+    elif hook_type == "permission_request":
+        tool = stdin_data.get("tool_name", "unknown")
+        return f"Permission needed: {tool}"
     return hook_type.replace("_", " ").title()
 
 # =============================================================================
@@ -933,7 +938,7 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     # Desktop notification
     if mode in ("notification_only", "audio_and_notification"):
         context = get_notification_context(hook_type, stdin_data or {})
-        urgency = "critical" if hook_type == "notification" else "normal"
+        urgency = "critical" if hook_type in ("notification", "permission_request") else "normal"
         notif_sent = send_desktop_notification("Claude Code", context, urgency)
         if notif_sent:
             log_debug(f"Desktop notification sent for {hook_type}: {context}")

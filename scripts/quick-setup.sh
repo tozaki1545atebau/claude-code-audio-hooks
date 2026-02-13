@@ -107,6 +107,18 @@ generate_macos_hooks() {
         }
       ]
     }
+  ],
+  "PermissionRequest": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "afplay /System/Library/Sounds/Basso.aiff 2>/dev/null & osascript -e 'display notification \"Permission required\" with title \"Claude Code\"' 2>/dev/null; true",
+          "timeout": 10
+        }
+      ]
+    }
   ]
 }
 HOOKS_JSON
@@ -147,6 +159,18 @@ generate_linux_hooks() {
         }
       ]
     }
+  ],
+  "PermissionRequest": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "notify-send -u critical 'Claude Code' 'Permission required' -i dialog-warning 2>/dev/null; paplay /usr/share/sounds/freedesktop/stereo/dialog-warning.oga 2>/dev/null || true",
+          "timeout": 10
+        }
+      ]
+    }
   ]
 }
 HOOKS_JSON
@@ -183,6 +207,18 @@ generate_wsl_hooks() {
         {
           "type": "command",
           "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Asterisk.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Background task finished', [System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Seconds 6; $n.Dispose()\" &",
+          "timeout": 10
+        }
+      ]
+    }
+  ],
+  "PermissionRequest": [
+    {
+      "matcher": "",
+      "hooks": [
+        {
+          "type": "command",
+          "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Question.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Warning; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Permission required', [System.Windows.Forms.ToolTipIcon]::Warning); Start-Sleep -Seconds 6; $n.Dispose()\" &",
           "timeout": 10
         }
       ]
@@ -364,10 +400,11 @@ main() {
     # Step 8: Print summary
     header "Setup Complete!"
     printf "\n"
-    success "3 notification hooks installed:"
-    printf "  ${GREEN}*${NC} Stop         - Sound + notification when tasks complete\n"
-    printf "  ${GREEN}*${NC} Notification - Alert when authorization is needed\n"
-    printf "  ${GREEN}*${NC} SubagentStop - Alert when background tasks finish\n"
+    success "4 notification hooks installed:"
+    printf "  ${GREEN}*${NC} Stop              - Sound + notification when tasks complete\n"
+    printf "  ${GREEN}*${NC} Notification      - Alert when authorization is needed\n"
+    printf "  ${GREEN}*${NC} SubagentStop      - Alert when background tasks finish\n"
+    printf "  ${GREEN}*${NC} PermissionRequest - Alert when permission dialog appears\n"
     printf "\n"
     printf "${BOLD}Next steps:${NC}\n"
     printf "  1. Restart Claude Code (close and reopen terminal)\n"
