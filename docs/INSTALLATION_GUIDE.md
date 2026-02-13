@@ -1,6 +1,6 @@
 # Installation Guide
 
-> **Version:** 4.1.1 | **Last Updated:** 2026-02-13
+> **Version:** 4.2.0 | **Last Updated:** 2026-02-13
 
 Complete installation guide for all platforms and environments.
 
@@ -340,8 +340,12 @@ nano ~/claude-code-audio-hooks/config/user_preferences.json
     "session_end": false,         // Optional
     "pretooluse": false,          // DISABLE: Too noisy
     "posttooluse": false,         // DISABLE: Too noisy
+    "posttoolusefailure": false,  // Optional: Tool failures
     "userpromptsubmit": false,
-    "precompact": false
+    "precompact": false,
+    "subagent_start": false,      // Optional: Subagent spawned
+    "teammate_idle": false,       // Optional: Agent Teams
+    "task_completed": false       // Optional: Agent Teams
   }
 }
 ```
@@ -384,7 +388,7 @@ python scripts/diagnose.py -v --test-audio
 | Project path saved | `cat ~/.claude/hooks/.project_path` | Valid path |
 | Settings configured | `grep hook_runner ~/.claude/settings.json` | Hook entries found |
 | User preferences | `cat config/user_preferences.json` | JSON with enabled_hooks |
-| Audio files | `ls audio/default/*.mp3 \| wc -l` | 9 files |
+| Audio files | `ls audio/default/*.mp3 \| wc -l` | 14 files |
 
 ---
 

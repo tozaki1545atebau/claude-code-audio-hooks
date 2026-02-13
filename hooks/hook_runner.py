@@ -7,9 +7,10 @@ This replaces the bash-based hooks for better Windows compatibility.
 Usage:
     python hook_runner.py <hook_type>
 
-Hook types: notification, stop, pretooluse, posttooluse, userpromptsubmit,
-            subagent_stop, precompact, session_start, session_end,
-            permission_request
+Hook types: notification, stop, pretooluse, posttooluse, posttoolusefailure,
+            userpromptsubmit, subagent_stop, subagent_start, precompact,
+            session_start, session_end, permission_request,
+            teammate_idle, task_completed
 
 Environment Variables:
     CLAUDE_HOOKS_DEBUG=1    Enable debug logging
@@ -271,7 +272,11 @@ DEFAULT_AUDIO_FILES = {
     "precompact": "notification-info.mp3",
     "session_start": "session-start.mp3",
     "session_end": "session-end.mp3",
-    "permission_request": "notification-urgent.mp3",
+    "permission_request": "permission-request.mp3",
+    "posttoolusefailure": "tool-failed.mp3",
+    "subagent_start": "subagent-start.mp3",
+    "teammate_idle": "teammate-idle.mp3",
+    "task_completed": "team-task-done.mp3",
 }
 
 # =============================================================================
@@ -704,6 +709,20 @@ def get_notification_context(hook_type: str, stdin_data: dict) -> str:
     elif hook_type == "permission_request":
         tool = stdin_data.get("tool_name", "unknown")
         return f"Permission needed: {tool}"
+    elif hook_type == "posttoolusefailure":
+        tool = stdin_data.get("tool_name", "unknown")
+        error = stdin_data.get("error", "")
+        return f"Tool failed: {tool}" + (f" - {error[:60]}" if error else "")
+    elif hook_type == "subagent_start":
+        agent_type = stdin_data.get("agent_type", "")
+        return f"Subagent starting" + (f": {agent_type}" if agent_type else "")
+    elif hook_type == "teammate_idle":
+        teammate = stdin_data.get("teammate_name", "unknown")
+        team = stdin_data.get("team_name", "")
+        return f"Teammate idle: {teammate}" + (f" ({team})" if team else "")
+    elif hook_type == "task_completed":
+        subject = stdin_data.get("task_subject", "")
+        return f"Task completed" + (f": {subject[:60]}" if subject else "")
     return hook_type.replace("_", " ").title()
 
 # =============================================================================
@@ -938,7 +957,7 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     # Desktop notification
     if mode in ("notification_only", "audio_and_notification"):
         context = get_notification_context(hook_type, stdin_data or {})
-        urgency = "critical" if hook_type in ("notification", "permission_request") else "normal"
+        urgency = "critical" if hook_type in ("notification", "permission_request", "posttoolusefailure") else "normal"
         notif_sent = send_desktop_notification("Claude Code", context, urgency)
         if notif_sent:
             log_debug(f"Desktop notification sent for {hook_type}: {context}")
@@ -965,8 +984,10 @@ def main() -> int:
 
     if len(sys.argv) < 2:
         print("Usage: python hook_runner.py <hook_type>", file=sys.stderr)
-        print("Hook types: notification, stop, pretooluse, posttooluse, userpromptsubmit,", file=sys.stderr)
-        print("            subagent_stop, precompact, session_start, session_end", file=sys.stderr)
+        print("Hook types: notification, stop, pretooluse, posttooluse, posttoolusefailure,", file=sys.stderr)
+        print("            userpromptsubmit, subagent_stop, subagent_start, precompact,", file=sys.stderr)
+        print("            session_start, session_end, permission_request,", file=sys.stderr)
+        print("            teammate_idle, task_completed", file=sys.stderr)
         print("\nEnvironment variables:", file=sys.stderr)
         print("  CLAUDE_HOOKS_DEBUG=1  Enable debug logging", file=sys.stderr)
         return 1

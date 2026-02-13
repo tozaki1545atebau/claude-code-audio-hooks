@@ -36,7 +36,7 @@ source "$PROJECT_DIR/hooks/shared/hook_config.sh" 2>/dev/null || true
 #=============================================================================
 
 # Hook names array (indexed)
-HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
+HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "posttoolusefailure" "userpromptsubmit" "subagent_stop" "subagent_start" "precompact" "session_start" "session_end" "permission_request" "teammate_idle" "task_completed")
 
 # Parallel arrays for enabled status and descriptions
 HOOK_ENABLED=()
@@ -48,11 +48,16 @@ init_descriptions() {
     HOOK_DESCRIPTIONS[1]="✅ Task completion"
     HOOK_DESCRIPTIONS[2]="🔨 Before tool execution (can be noisy)"
     HOOK_DESCRIPTIONS[3]="📊 After tool execution (very noisy)"
-    HOOK_DESCRIPTIONS[4]="💬 User prompt submission"
-    HOOK_DESCRIPTIONS[5]="🤖 Subagent task completion"
-    HOOK_DESCRIPTIONS[6]="🗜️  Before conversation compaction"
-    HOOK_DESCRIPTIONS[7]="👋 Session start"
-    HOOK_DESCRIPTIONS[8]="👋 Session end"
+    HOOK_DESCRIPTIONS[4]="❌ Tool execution failed"
+    HOOK_DESCRIPTIONS[5]="💬 User prompt submission"
+    HOOK_DESCRIPTIONS[6]="🤖 Subagent task completion"
+    HOOK_DESCRIPTIONS[7]="🚀 Subagent spawned"
+    HOOK_DESCRIPTIONS[8]="🗜️  Before conversation compaction"
+    HOOK_DESCRIPTIONS[9]="👋 Session start"
+    HOOK_DESCRIPTIONS[10]="👋 Session end"
+    HOOK_DESCRIPTIONS[11]="🔐 Permission dialog (CRITICAL)"
+    HOOK_DESCRIPTIONS[12]="💤 Teammate idle (Agent Teams)"
+    HOOK_DESCRIPTIONS[13]="🏁 Task completed (Agent Teams)"
 }
 
 # Get index of hook by name
@@ -102,11 +107,16 @@ init_hooks() {
         HOOK_ENABLED[1]="true"   # stop
         HOOK_ENABLED[2]="false"  # pretooluse
         HOOK_ENABLED[3]="false"  # posttooluse
-        HOOK_ENABLED[4]="false"  # userpromptsubmit
-        HOOK_ENABLED[5]="true"   # subagent_stop
-        HOOK_ENABLED[6]="false"  # precompact
-        HOOK_ENABLED[7]="false"  # session_start
-        HOOK_ENABLED[8]="false"  # session_end
+        HOOK_ENABLED[4]="false"  # posttoolusefailure
+        HOOK_ENABLED[5]="false"  # userpromptsubmit
+        HOOK_ENABLED[6]="true"   # subagent_stop
+        HOOK_ENABLED[7]="false"  # subagent_start
+        HOOK_ENABLED[8]="false"  # precompact
+        HOOK_ENABLED[9]="false"  # session_start
+        HOOK_ENABLED[10]="false" # session_end
+        HOOK_ENABLED[11]="true"  # permission_request
+        HOOK_ENABLED[12]="false" # teammate_idle
+        HOOK_ENABLED[13]="false" # task_completed
     fi
 }
 
@@ -144,7 +154,7 @@ except:
 # Update enabled_hooks from environment variables
 import os
 enabled_hooks = {}
-hooks = ["notification", "stop", "pretooluse", "posttooluse", "userpromptsubmit", "subagent_stop", "precompact", "session_start", "session_end"]
+hooks = ["notification", "stop", "pretooluse", "posttooluse", "posttoolusefailure", "userpromptsubmit", "subagent_stop", "subagent_start", "precompact", "session_start", "session_end", "permission_request", "teammate_idle", "task_completed"]
 
 for hook in hooks:
     env_var = f"HOOK_{hook.upper()}"
@@ -209,7 +219,7 @@ display_main_menu() {
 
     echo ""
     echo -e "${CYAN}${BOLD}Options:${NC}"
-    echo -e "  ${BOLD}[1-9]${NC} Toggle hook on/off"
+    echo -e "  ${BOLD}[1-14]${NC} Toggle hook on/off"
     echo -e "  ${BOLD}[R]${NC}   Reset to recommended defaults"
     echo -e "  ${BOLD}[T]${NC}   Test audio files"
     echo -e "  ${BOLD}[S]${NC}   Save and exit"
@@ -219,7 +229,7 @@ display_main_menu() {
 
 get_hook_index_by_number() {
     local num=$1
-    if [ "$num" -ge 1 ] && [ "$num" -le 9 ]; then
+    if [ "$num" -ge 1 ] && [ "$num" -le 14 ]; then
         echo $((num - 1))
     else
         echo ""
@@ -248,6 +258,7 @@ reset_to_defaults() {
     echo -e "  ${GREEN}✓${NC} Notification (authorization/confirmation)"
     echo -e "  ${GREEN}✓${NC} Stop (task completion)"
     echo -e "  ${GREEN}✓${NC} SubagentStop (background tasks)"
+    echo -e "  ${GREEN}✓${NC} PermissionRequest (permission dialog)"
     echo -e "  ${RED}✗${NC} All others (disabled)"
     echo ""
     read -p "Confirm reset? (y/N): " -n 1 -r
@@ -258,11 +269,16 @@ reset_to_defaults() {
         HOOK_ENABLED[1]="true"   # stop
         HOOK_ENABLED[2]="false"  # pretooluse
         HOOK_ENABLED[3]="false"  # posttooluse
-        HOOK_ENABLED[4]="false"  # userpromptsubmit
-        HOOK_ENABLED[5]="true"   # subagent_stop
-        HOOK_ENABLED[6]="false"  # precompact
-        HOOK_ENABLED[7]="false"  # session_start
-        HOOK_ENABLED[8]="false"  # session_end
+        HOOK_ENABLED[4]="false"  # posttoolusefailure
+        HOOK_ENABLED[5]="false"  # userpromptsubmit
+        HOOK_ENABLED[6]="true"   # subagent_stop
+        HOOK_ENABLED[7]="false"  # subagent_start
+        HOOK_ENABLED[8]="false"  # precompact
+        HOOK_ENABLED[9]="false"  # session_start
+        HOOK_ENABLED[10]="false" # session_end
+        HOOK_ENABLED[11]="true"  # permission_request
+        HOOK_ENABLED[12]="false" # teammate_idle
+        HOOK_ENABLED[13]="false" # task_completed
 
         echo -e "${GREEN}✓${NC} Reset to defaults"
         sleep 1
@@ -278,11 +294,16 @@ test_audio_files() {
         "default/task-complete.mp3"
         "default/task-starting.mp3"
         "default/task-progress.mp3"
+        "default/tool-failed.mp3"
         "default/prompt-received.mp3"
         "default/subagent-complete.mp3"
+        "default/subagent-start.mp3"
         "default/notification-info.mp3"
         "default/session-start.mp3"
         "default/session-end.mp3"
+        "default/permission-request.mp3"
+        "default/teammate-idle.mp3"
+        "default/team-task-done.mp3"
     )
 
     echo -e "Testing enabled hooks only...\n"
@@ -326,11 +347,11 @@ main() {
     while true; do
         display_main_menu
 
-        read -p "Enter option: " -n 1 -r option
+        read -p "Enter option: " -r option
         echo ""
 
         case $option in
-            [1-9])
+            [1-9]|1[0-4])
                 local index=$(get_hook_index_by_number $option)
                 if [ -n "$index" ]; then
                     toggle_hook "$index"
@@ -418,15 +439,17 @@ ${CYAN}PROGRAMMATIC MODE${NC} (with arguments):
 
   ${BOLD}--reset${NC}
     Reset to recommended defaults
-    (Enables: notification, stop, subagent_stop; Disables: all others)
+    (Enables: notification, stop, subagent_stop, permission_request; Disables: all others)
 
   ${BOLD}--apply${NC}
     Save configuration without prompting
     (Auto-applied after --enable, --disable, --set, --reset)
 
 ${CYAN}AVAILABLE HOOKS${NC}:
-  notification, stop, pretooluse, posttooluse, userpromptsubmit,
-  subagent_stop, precompact, session_start, session_end
+  notification, stop, pretooluse, posttooluse, posttoolusefailure,
+  userpromptsubmit, subagent_stop, subagent_start, precompact,
+  session_start, session_end, permission_request,
+  teammate_idle, task_completed
 
 ${CYAN}EXAMPLES${NC}:
   # Enable multiple hooks at once
@@ -604,14 +627,19 @@ cmd_reset() {
     HOOK_ENABLED[1]="true"   # stop
     HOOK_ENABLED[2]="false"  # pretooluse
     HOOK_ENABLED[3]="false"  # posttooluse
-    HOOK_ENABLED[4]="false"  # userpromptsubmit
-    HOOK_ENABLED[5]="true"   # subagent_stop
-    HOOK_ENABLED[6]="false"  # precompact
-    HOOK_ENABLED[7]="false"  # session_start
-    HOOK_ENABLED[8]="false"  # session_end
+    HOOK_ENABLED[4]="false"  # posttoolusefailure
+    HOOK_ENABLED[5]="false"  # userpromptsubmit
+    HOOK_ENABLED[6]="true"   # subagent_stop
+    HOOK_ENABLED[7]="false"  # subagent_start
+    HOOK_ENABLED[8]="false"  # precompact
+    HOOK_ENABLED[9]="false"  # session_start
+    HOOK_ENABLED[10]="false" # session_end
+    HOOK_ENABLED[11]="true"  # permission_request
+    HOOK_ENABLED[12]="false" # teammate_idle
+    HOOK_ENABLED[13]="false" # task_completed
 
     echo -e "${GREEN}✓${NC} Reset to recommended defaults:"
-    echo -e "  ${GREEN}✓${NC} Enabled: notification, stop, subagent_stop"
+    echo -e "  ${GREEN}✓${NC} Enabled: notification, stop, subagent_stop, permission_request"
     echo -e "  ${RED}✗${NC} Disabled: all others"
 
     cmd_save

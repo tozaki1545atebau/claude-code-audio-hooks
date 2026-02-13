@@ -15,7 +15,12 @@
     "userpromptsubmit": "custom/chime-prompt-received.mp3",
     "precompact": "custom/chime-notification-info.mp3",
     "session_start": "custom/chime-session-start.mp3",
-    "session_end": "custom/chime-session-end.mp3"
+    "session_end": "custom/chime-session-end.mp3",
+    "permission_request": "custom/chime-permission-request.mp3",
+    "posttoolusefailure": "custom/chime-tool-failed.mp3",
+    "subagent_start": "custom/chime-subagent-start.mp3",
+    "teammate_idle": "custom/chime-teammate-idle.mp3",
+    "task_completed": "custom/chime-team-task-done.mp3"
   },
   "usage_instructions": [
     "To use chime sounds system-wide:",

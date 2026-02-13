@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.0.3 | **Last Updated:** 2026-02-11
+> **Version:** 4.2.0 | **Last Updated:** 2026-02-13
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -78,16 +78,21 @@ claude-code-audio-hooks/
 ├── CHANGELOG.md                 # Version history
 │
 ├── audio/
-│   └── default/                 # Audio files (9 MP3 files)
-│       ├── notification.mp3     # Authorization requests
-│       ├── task-complete.mp3    # Task completion (Stop)
-│       ├── session-start.mp3    # Session begins
-│       ├── session-end.mp3      # Session ends
-│       ├── tool-start.mp3       # Before tool execution
-│       ├── tool-end.mp3         # After tool execution
-│       ├── user-prompt.mp3      # User submits prompt
-│       ├── subagent-complete.mp3# Background task done
-│       └── compact.mp3          # Context compaction
+│   └── default/                 # Audio files (14 MP3 files)
+│       ├── notification-urgent.mp3  # Authorization requests
+│       ├── task-complete.mp3        # Task completion (Stop)
+│       ├── session-start.mp3        # Session begins
+│       ├── session-end.mp3          # Session ends
+│       ├── task-starting.mp3        # Before tool execution
+│       ├── task-progress.mp3        # After tool execution
+│       ├── prompt-received.mp3      # User submits prompt
+│       ├── subagent-complete.mp3    # Background task done
+│       ├── notification-info.mp3    # Context compaction
+│       ├── permission-request.mp3   # Permission dialog
+│       ├── tool-failed.mp3          # Tool execution failed
+│       ├── subagent-start.mp3       # Subagent spawned
+│       ├── teammate-idle.mp3        # Teammate goes idle
+│       └── team-task-done.mp3       # Team task completed
 │
 ├── config/
 │   ├── default_preferences.json # Default settings template
@@ -119,31 +124,39 @@ claude-code-audio-hooks/
 ```mermaid
 graph TD
     subgraph "Hook Events"
-        H1[Notification] -->|"Authorization needed"| A1[notification.mp3]
+        H1[Notification] -->|"Authorization needed"| A1[notification-urgent.mp3]
         H2[Stop] -->|"Task completed"| A2[task-complete.mp3]
         H3[SessionStart] -->|"Session begins"| A3[session-start.mp3]
         H4[SessionEnd] -->|"Session ends"| A4[session-end.mp3]
-        H5[PreToolUse] -->|"Before tool"| A5[tool-start.mp3]
-        H6[PostToolUse] -->|"After tool"| A6[tool-end.mp3]
-        H7[UserPromptSubmit] -->|"User input"| A7[user-prompt.mp3]
+        H5[PreToolUse] -->|"Before tool"| A5[task-starting.mp3]
+        H6[PostToolUse] -->|"After tool"| A6[task-progress.mp3]
+        H7[UserPromptSubmit] -->|"User input"| A7[prompt-received.mp3]
         H8[SubagentStop] -->|"Background done"| A8[subagent-complete.mp3]
-        H9[PreCompact] -->|"Compacting"| A9[compact.mp3]
-        H10[PermissionRequest] -->|"Permission dialog"| A10[notification-urgent.mp3]
+        H9[PreCompact] -->|"Compacting"| A9[notification-info.mp3]
+        H10[PermissionRequest] -->|"Permission dialog"| A10[permission-request.mp3]
+        H11[PostToolUseFailure] -->|"Tool failed"| A11[tool-failed.mp3]
+        H12[SubagentStart] -->|"Subagent spawned"| A12[subagent-start.mp3]
+        H13[TeammateIdle] -->|"Teammate idle"| A13[teammate-idle.mp3]
+        H14[TaskCompleted] -->|"Task done"| A14[team-task-done.mp3]
     end
 ```
 
 | Hook | Trigger | Default Audio | Recommended |
 |------|---------|---------------|-------------|
-| `Notification` | Authorization requests | notification.mp3 | **Enable** |
+| `Notification` | Authorization requests | notification-urgent.mp3 | **Enable** |
 | `Stop` | Task completion | task-complete.mp3 | **Enable** |
 | `SubagentStop` | Background task done | subagent-complete.mp3 | **Enable** |
-| `PermissionRequest` | Permission dialog appears | notification-urgent.mp3 | **Enable** |
+| `PermissionRequest` | Permission dialog appears | permission-request.mp3 | **Enable** |
 | `SessionStart` | New session begins | session-start.mp3 | Optional |
 | `SessionEnd` | Session closes | session-end.mp3 | Optional |
-| `PreToolUse` | Before each tool | tool-start.mp3 | Disable (noisy) |
-| `PostToolUse` | After each tool | tool-end.mp3 | Disable (noisy) |
-| `UserPromptSubmit` | User sends message | user-prompt.mp3 | Optional |
-| `PreCompact` | Context compaction | compact.mp3 | Optional |
+| `PreToolUse` | Before each tool | task-starting.mp3 | Disable (noisy) |
+| `PostToolUse` | After each tool | task-progress.mp3 | Disable (noisy) |
+| `PostToolUseFailure` | Tool execution fails | tool-failed.mp3 | Optional |
+| `UserPromptSubmit` | User sends message | prompt-received.mp3 | Optional |
+| `PreCompact` | Context compaction | notification-info.mp3 | Optional |
+| `SubagentStart` | Subagent spawned | subagent-start.mp3 | Optional |
+| `TeammateIdle` | Teammate goes idle | teammate-idle.mp3 | Optional |
+| `TaskCompleted` | Team task completed | team-task-done.mp3 | Optional |
 
 ## Installation Prerequisites
 
@@ -215,8 +228,12 @@ D:/github_repository/claude-code-audio-hooks
     "session_end": false,
     "pretooluse": false,
     "posttooluse": false,
+    "posttoolusefailure": false,
     "userpromptsubmit": false,
-    "precompact": false
+    "precompact": false,
+    "subagent_start": false,
+    "teammate_idle": false,
+    "task_completed": false
   },
   "notification_settings": {
     "mode": "audio_and_notification",
@@ -227,7 +244,11 @@ D:/github_repository/claude-code-audio-hooks
     "messages": {
       "stop": "Task completed",
       "notification": "Attention, authorization needed",
-      "permission_request": "Permission required"
+      "permission_request": "Permission required",
+      "posttoolusefailure": "Tool execution failed",
+      "subagent_start": "Background task starting",
+      "teammate_idle": "Teammate is idle",
+      "task_completed": "Team task completed"
     }
   }
 }
@@ -335,6 +356,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.2.0 | 2026-02-13 | Add 4 new hooks (PostToolUseFailure, SubagentStart, TeammateIdle, TaskCompleted), 14 total hooks, 14 unique audio files |
 | 4.0.3 | 2026-02-11 | Fix Windows installer hook filtering, uninstaller hook_runner.py detection, defensive wrapping |
 | 4.0.0 | 2026-02-10 | Quick Setup (Lite tier), desktop notifications, TTS, context-aware alerts |
 | 3.3.5 | 2025-12-27 | UTF-8 BOM fix for Windows |

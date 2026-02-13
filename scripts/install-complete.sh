@@ -1,6 +1,6 @@
 #!/bin/bash
 # Claude Code Audio Hooks - Complete Installation Script
-# Version: 4.0.3
+# Version: 4.2.0
 # This script handles the complete installation process automatically
 # Now with integrated environment detection, platform fixes, and validation
 # Supports non-interactive mode for Claude Code and automation
@@ -11,7 +11,7 @@ set -eo pipefail  # Exit on errors (-e) and pipe failures (pipefail)
 # CONFIGURATION
 # =============================================================================
 
-VERSION="4.0.3"
+VERSION="4.2.0"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
 
@@ -478,10 +478,14 @@ try:
         'PreCompact': 'precompact',
         'SessionStart': 'session_start',
         'SessionEnd': 'session_end',
-        'PermissionRequest': 'permission_request'
+        'PermissionRequest': 'permission_request',
+        'PostToolUseFailure': 'posttoolusefailure',
+        'SubagentStart': 'subagent_start',
+        'TeammateIdle': 'teammate_idle',
+        'TaskCompleted': 'task_completed'
     }
 
-    hooks_with_matcher = ['PreToolUse', 'PostToolUse', 'PermissionRequest']
+    hooks_with_matcher = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart']
     registered = 0
 
     if is_windows:
@@ -659,11 +663,11 @@ step_run_tests() {
         PROJECT_PATH=$(cat ~/.claude/hooks/.project_path)
         if [ -d "$PROJECT_PATH/audio/default" ]; then
             local audio_count=$(ls -1 "$PROJECT_PATH/audio/default"/*.mp3 2>/dev/null | wc -l)
-            if [ $audio_count -ge 9 ]; then
+            if [ $audio_count -ge 14 ]; then
                 print_success "Audio files: $audio_count files found"
                 ((tests_passed+=1))
             else
-                print_warning "Audio files: Only $audio_count/9 files found"
+                print_warning "Audio files: Only $audio_count/14 files found"
                 ((tests_failed+=1))
             fi
         else

@@ -58,7 +58,7 @@ AUDIO_DIR="$TEST_AUDIO_DIR"
 #=============================================================================
 
 # Hook names array (indexed)
-HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "userpromptsubmit" "subagent_stop" "precompact" "session_start" "session_end")
+HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "posttoolusefailure" "userpromptsubmit" "subagent_stop" "subagent_start" "precompact" "session_start" "session_end" "permission_request" "teammate_idle" "task_completed")
 
 # Parallel arrays for configuration data
 ENABLED_STATUS=()  # true/false for each hook
@@ -67,22 +67,32 @@ AUDIO_FILES=(
     "task-complete.mp3"
     "task-starting.mp3"
     "task-progress.mp3"
+    "tool-failed.mp3"
     "prompt-received.mp3"
     "subagent-complete.mp3"
+    "subagent-start.mp3"
     "notification-info.mp3"
     "session-start.mp3"
     "session-end.mp3"
+    "permission-request.mp3"
+    "teammate-idle.mp3"
+    "team-task-done.mp3"
 )
 AUDIO_DESCRIPTIONS=(
     "Authorization/Confirmation Requests"
     "Task Completion"
     "Before Tool Execution"
     "After Tool Execution"
+    "Tool Execution Failed"
     "User Prompt Submission"
     "Subagent Task Completion"
+    "Subagent Spawned"
     "Before Conversation Compaction"
     "Session Start"
     "Session End"
+    "Permission Dialog"
+    "Teammate Idle (Agent Teams)"
+    "Task Completed (Agent Teams)"
 )
 
 # Get index of hook by name
@@ -147,11 +157,16 @@ else
     ENABLED_STATUS[1]="true"   # stop
     ENABLED_STATUS[2]="false"  # pretooluse
     ENABLED_STATUS[3]="false"  # posttooluse
-    ENABLED_STATUS[4]="false"  # userpromptsubmit
-    ENABLED_STATUS[5]="true"   # subagent_stop
-    ENABLED_STATUS[6]="false"  # precompact
-    ENABLED_STATUS[7]="false"  # session_start
-    ENABLED_STATUS[8]="false"  # session_end
+    ENABLED_STATUS[4]="false"  # posttoolusefailure
+    ENABLED_STATUS[5]="false"  # userpromptsubmit
+    ENABLED_STATUS[6]="true"   # subagent_stop
+    ENABLED_STATUS[7]="false"  # subagent_start
+    ENABLED_STATUS[8]="false"  # precompact
+    ENABLED_STATUS[9]="false"  # session_start
+    ENABLED_STATUS[10]="false" # session_end
+    ENABLED_STATUS[11]="true"  # permission_request
+    ENABLED_STATUS[12]="false" # teammate_idle
+    ENABLED_STATUS[13]="false" # task_completed
 
     echo -e "${YELLOW}⚠${NC} No config found, using defaults\n"
 fi
@@ -237,20 +252,20 @@ case $TEST_OPTION in
     2)
         # Test all audio files
         echo -e "${BLUE}${BOLD}Testing All Audio Files${NC}\n"
-        echo -e "This will play all 9 audio files, including disabled hooks.\n"
+        echo -e "This will play all 14 audio files, including disabled hooks.\n"
 
         count=0
         for hook in "${HOOK_NAMES[@]}"; do
             test_audio_file "$hook"
             ((count++))
 
-            if [ $count -lt 9 ]; then
+            if [ $count -lt 14 ]; then
                 echo -e "${CYAN}Next audio in 2 seconds...${NC}\n"
                 sleep 2
             fi
         done
 
-        echo -e "${GREEN}${BOLD}✓ Tested all 9 audio files${NC}"
+        echo -e "${GREEN}${BOLD}✓ Tested all 14 audio files${NC}"
         ;;
 
     3)
@@ -258,18 +273,22 @@ case $TEST_OPTION in
         echo -e "${BLUE}${BOLD}Test Specific Hook${NC}\n"
         echo "Select a hook to test:"
         echo ""
-        echo "  1. Notification (authorization/confirmation)"
-        echo "  2. Stop (task completion)"
-        echo "  3. PreToolUse (before tool execution)"
-        echo "  4. PostToolUse (after tool execution)"
-        echo "  5. UserPromptSubmit (prompt submission)"
-        echo "  6. SubagentStop (subagent completion)"
-        echo "  7. PreCompact (before compaction)"
-        echo "  8. SessionStart (session start)"
-        echo "  9. SessionEnd (session end)"
+        echo "   1. Notification (authorization/confirmation)"
+        echo "   2. Stop (task completion)"
+        echo "   3. PreToolUse (before tool execution)"
+        echo "   4. PostToolUse (after tool execution)"
+        echo "   5. PostToolUseFailure (tool execution failed)"
+        echo "   6. UserPromptSubmit (prompt submission)"
+        echo "   7. SubagentStop (subagent completion)"
+        echo "   8. SubagentStart (subagent spawned)"
+        echo "   9. PreCompact (before compaction)"
+        echo "  10. SessionStart (session start)"
+        echo "  11. SessionEnd (session end)"
+        echo "  12. PermissionRequest (permission dialog)"
+        echo "  13. TeammateIdle (teammate idle)"
+        echo "  14. TaskCompleted (task completed)"
         echo ""
-        read -p "Enter number (1-9): " -n 1 -r HOOK_NUM
-        echo ""
+        read -p "Enter number (1-14): " -r HOOK_NUM
         echo ""
 
         case $HOOK_NUM in
@@ -277,11 +296,16 @@ case $TEST_OPTION in
             2) test_audio_file "stop" ;;
             3) test_audio_file "pretooluse" ;;
             4) test_audio_file "posttooluse" ;;
-            5) test_audio_file "userpromptsubmit" ;;
-            6) test_audio_file "subagent_stop" ;;
-            7) test_audio_file "precompact" ;;
-            8) test_audio_file "session_start" ;;
-            9) test_audio_file "session_end" ;;
+            5) test_audio_file "posttoolusefailure" ;;
+            6) test_audio_file "userpromptsubmit" ;;
+            7) test_audio_file "subagent_stop" ;;
+            8) test_audio_file "subagent_start" ;;
+            9) test_audio_file "precompact" ;;
+            10) test_audio_file "session_start" ;;
+            11) test_audio_file "session_end" ;;
+            12) test_audio_file "permission_request" ;;
+            13) test_audio_file "teammate_idle" ;;
+            14) test_audio_file "task_completed" ;;
             *) echo -e "${RED}Invalid selection${NC}" ;;
         esac
         ;;

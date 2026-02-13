@@ -22,7 +22,7 @@
     Automated installation without prompts.
 
 .NOTES
-    Version: 4.0.3
+    Version: 4.2.0
     Requires: Python 3.6+, Claude Code CLI
 #>
 
@@ -35,7 +35,7 @@ param(
 # CONFIGURATION
 # =============================================================================
 
-$Version = "4.0.3"
+$Version = "4.2.0"
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $ProjectDir = Split-Path -Parent $ScriptDir
 $ClaudeDir = Join-Path $env:USERPROFILE ".claude"
@@ -239,7 +239,7 @@ function Step-ValidateProject {
 
     # Check audio files
     $audioFiles = Get-ChildItem -Path (Join-Path $ProjectDir "audio\default") -Filter "*.mp3" -ErrorAction SilentlyContinue
-    if ($audioFiles.Count -ge 9) {
+    if ($audioFiles.Count -ge 14) {
         Write-Success "Audio files: $($audioFiles.Count) MP3 files found"
         $valid++
     } else {
@@ -336,9 +336,13 @@ function Step-ConfigureSettings {
         'SessionStart' = 'session_start'
         'SessionEnd' = 'session_end'
         'PermissionRequest' = 'permission_request'
+        'PostToolUseFailure' = 'posttoolusefailure'
+        'SubagentStart' = 'subagent_start'
+        'TeammateIdle' = 'teammate_idle'
+        'TaskCompleted' = 'task_completed'
     }
 
-    $hooksWithMatcher = @('PreToolUse', 'PostToolUse', 'PermissionRequest')
+    $hooksWithMatcher = @('PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart')
     $registered = 0
 
     foreach ($hookName in $hookTypes.Keys) {

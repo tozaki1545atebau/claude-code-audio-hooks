@@ -34,7 +34,19 @@
     "session_end": false,
 
     "_comment_permission_request": "Plays when permission dialog appears ('Allow this bash command?') - HIGHLY RECOMMENDED",
-    "permission_request": true
+    "permission_request": true,
+
+    "_comment_posttoolusefailure": "Plays when a tool execution fails - OPTIONAL",
+    "posttoolusefailure": false,
+
+    "_comment_subagent_start": "Plays when a background subagent is spawned - OPTIONAL",
+    "subagent_start": false,
+
+    "_comment_teammate_idle": "Plays when an Agent Teams teammate goes idle - OPTIONAL",
+    "teammate_idle": false,
+
+    "_comment_task_completed": "Plays when an Agent Teams task is completed - OPTIONAL",
+    "task_completed": false
   },
 
   "audio_files": {
@@ -49,7 +61,11 @@
     "precompact": "default/notification-info.mp3",
     "session_start": "default/session-start.mp3",
     "session_end": "default/session-end.mp3",
-    "permission_request": "default/notification-urgent.mp3"
+    "permission_request": "default/permission-request.mp3",
+    "posttoolusefailure": "default/tool-failed.mp3",
+    "subagent_start": "default/subagent-start.mp3",
+    "teammate_idle": "default/teammate-idle.mp3",
+    "task_completed": "default/team-task-done.mp3"
   },
 
   "playback_settings": {
@@ -78,7 +94,11 @@
       "subagent_stop": "Background task finished",
       "pretooluse": "Running tool",
       "posttooluse": "Tool finished",
-      "permission_request": "Permission required"
+      "permission_request": "Permission required",
+      "posttoolusefailure": "Tool execution failed",
+      "subagent_start": "Background task starting",
+      "teammate_idle": "Teammate is idle",
+      "task_completed": "Team task completed"
     }
   },
 

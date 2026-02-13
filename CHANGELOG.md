@@ -5,6 +5,37 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.0] - 2026-02-13
+
+### Added
+- **PostToolUseFailure hook**: Audio alert when a tool execution fails (matches on tool name)
+- **SubagentStart hook**: Audio alert when a background subagent is spawned (matches on agent type)
+- **TeammateIdle hook**: Audio alert when an Agent Teams teammate goes idle
+- **TaskCompleted hook**: Audio alert when an Agent Teams task is completed
+- 5 new ElevenLabs Jessica voice audio files: `permission-request.mp3`, `tool-failed.mp3`, `subagent-start.mp3`, `teammate-idle.mp3`, `team-task-done.mp3`
+- Full coverage of all 14 Claude Code hook events
+
+### Changed
+- Total hook types: 10 → 14
+- Total audio files: 9 → 14 (each hook now has a unique audio file)
+- `permission_request` hook now uses its own `permission-request.mp3` (was sharing `notification-urgent.mp3`)
+- `posttoolusefailure` uses critical urgency for desktop notifications
+- Updated all documentation to reflect new hook count
+- Updated installers to register all 14 hook types with correct matcher support
+
+### Upgrade
+
+Re-run your installer to register the new hooks:
+```bash
+# Full Install
+bash scripts/install-complete.sh      # macOS/Linux/WSL/Git Bash
+.\scripts\install-windows.ps1         # Windows PowerShell
+```
+
+Note: All 4 new hooks are disabled by default. Enable them in `config/user_preferences.json` if needed.
+
+---
+
 ## [4.1.1] - 2026-02-13
 
 ### Feature: PermissionRequest Hook Support

@@ -6,7 +6,7 @@ Get notified when Claude Code finishes tasks or needs your attention.
 Audio, desktop notifications, and text-to-speech - all platforms.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-4.1.1-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -83,11 +83,11 @@ Want custom audio, TTS, or advanced features? See [Full Installation](#-full-ins
 | **Setup time** | Manual JSON editing | 30 seconds | 2 minutes |
 | **Dependencies** | None | None | Python 3.6+ |
 | **Desktop notifications** | macOS only | All platforms | All platforms |
-| **Custom MP3 audio** | No | System sounds | 18 professional sounds |
+| **Custom MP3 audio** | No | System sounds | 14 professional sounds |
 | **Text-to-speech** | No | No | Yes |
 | **Context-aware alerts** | No | No | Yes ("Permission needed for Bash") |
 | **Debouncing** | No | No | Yes |
-| **Per-hook config** | No | No | Yes (10 hook types) |
+| **Per-hook config** | No | No | Yes (14 hook types) |
 | **Logging/diagnostics** | No | No | Yes |
 
 ---
@@ -98,7 +98,7 @@ Want custom audio, TTS, or advanced features? See [Full Installation](#-full-ins
 - [Comparison](#comparison)
 - [What Does This Do?](#what-does-this-do)
 - [Full Installation](#-full-installation)
-- [The 10 Notification Types](#-the-10-notification-types)
+- [The 14 Notification Types](#-the-14-notification-types)
 - [Configuration](#-configuration)
 - [Desktop Notifications & TTS](#-desktop-notifications--tts)
 - [Audio Customization Options](#-audio-customization-options)
@@ -233,7 +233,7 @@ graph TB
 | **Native Linux** | ✅ Fully supported | mpg123/aplay | `bash scripts/install-complete.sh` |
 | **Cygwin** | ✅ Fully supported | PowerShell | `bash scripts/install-complete.sh` |
 
-> **NEW in v3.3.4:** Windows users can now install directly using PowerShell - no Git Bash required!
+> **NEW in v4.2.0:** Full coverage of all 14 Claude Code hook events! Windows users can install directly using PowerShell - no Git Bash required!
 
 > **Note for Git Bash Users:** Version 2.2+ includes automatic path conversion to handle Git Bash's Unix-style paths. The installer will configure this automatically—no manual setup required!
 
@@ -263,7 +263,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 3.3.4 from
+Please install Claude Code Audio Hooks version 4.2.0 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -283,7 +283,7 @@ cd claude-code-audio-hooks
 bash scripts/install-complete.sh
 # The installer will:
 # - Detect your environment automatically
-# - Install all 9 hooks
+# - Install all 14 hooks
 # - Configure settings and permissions
 # - Validate the installation
 # - Optionally test audio playback
@@ -371,11 +371,12 @@ flowchart TD
     Clone --> Run[Run install-complete.sh]
     Run --> Detect[Detect Environment<br/>WSL/Git Bash/Cygwin/macOS/Linux]
     Detect --> Check[Check Prerequisites<br/>Claude Code, Python, Git]
-    Check --> Install[Install 9 Hook Scripts<br/>to ~/.claude/hooks/]
+    Check --> Install[Install 14 Hook Scripts<br/>to ~/.claude/hooks/]
     Install --> Config[Configure Settings<br/>settings.json & settings.local.json]
     Config --> Perms[Set Permissions<br/>chmod +x hooks]
-    Perms --> Audio[Verify Audio Files<br/>9 MP3 files]
+    Perms --> Audio[Verify Audio Files<br/>14 MP3 files]
     Audio --> Test[Run Tests<br/>Automated validation]
+
     Test --> Success{Success?}
     Success -->|Yes| Done([✅ Installation Complete<br/>Restart Claude Code])
     Success -->|No| Diagnose[Run Diagnostics<br/>Check installation log]
@@ -423,7 +424,7 @@ bash scripts/install-complete.sh
 
 ---
 
-## 🎵 The 10 Notification Types
+## 🎵 The 14 Notification Types
 
 ### **✅ Enabled by Default (4 Essential Hooks)**
 
@@ -475,44 +476,68 @@ graph LR
 
 ---
 
-### **❌ Disabled by Default (6 Optional Hooks)**
+### **❌ Disabled by Default (10 Optional Hooks)**
 
 These hooks are available but disabled to avoid noise. Enable them in `config/user_preferences.json` if needed.
 
-#### **4. 🔨 PreToolUse Hook** - Before Tool Execution
+#### **5. 🔨 PreToolUse Hook** - Before Tool Execution
 - **When:** Before EVERY tool (Read, Write, Edit, Bash, etc.)
 - **Audio:** "Starting task."
 - **Why disabled:** Too frequent! Plays before every single tool execution
 - **Status:** ❌ Disabled by default
 
-#### **5. 📊 PostToolUse Hook** - After Tool Execution
+#### **6. 📊 PostToolUse Hook** - After Tool Execution
 - **When:** After EVERY tool execution
 - **Audio:** "Task in progress."
 - **Why disabled:** Extremely noisy during active development
 - **Status:** ❌ Disabled by default
 
-#### **6. 💬 UserPromptSubmit Hook** - Prompt Confirmation
+#### **7. 💬 UserPromptSubmit Hook** - Prompt Confirmation
 - **When:** You press Enter to submit a prompt
 - **Audio:** "Prompt received."
 - **Why disabled:** Unnecessary - you already know when you submit
 - **Status:** ❌ Disabled by default
 
-#### **7. 🗜️ PreCompact Hook** - Conversation Compaction
+#### **8. 🗜️ PreCompact Hook** - Conversation Compaction
 - **When:** Before Claude compacts conversation history
 - **Audio:** "Information: compacting conversation."
 - **Why disabled:** Rare event, not critical
 - **Status:** ❌ Disabled by default
 
-#### **8. 👋 SessionStart Hook** - Session Start
+#### **9. 👋 SessionStart Hook** - Session Start
 - **When:** Claude Code session starts
 - **Audio:** "Session started."
 - **Why disabled:** Optional - not needed for core functionality
 - **Status:** ❌ Disabled by default
 
-#### **9. 👋 SessionEnd Hook** - Session End
+#### **10. 👋 SessionEnd Hook** - Session End
 - **When:** Claude Code session ends
 - **Audio:** "Session ended."
 - **Why disabled:** Optional - not needed for core functionality
+- **Status:** ❌ Disabled by default
+
+#### **11. ❌ PostToolUseFailure Hook** - Tool Failure Alert
+- **When:** A tool execution fails (e.g., Bash command errors, file not found)
+- **Audio:** "Warning! Tool execution failed."
+- **Why disabled:** Niche - most users don't need failure-specific alerts
+- **Status:** ❌ Disabled by default
+
+#### **12. 🚀 SubagentStart Hook** - Subagent Spawned
+- **When:** A background subagent is spawned (e.g., Task tool launches an agent)
+- **Audio:** "Background task starting."
+- **Why disabled:** Niche - only useful for heavy subagent workflows
+- **Status:** ❌ Disabled by default
+
+#### **13. 💤 TeammateIdle Hook** - Teammate Idle (Agent Teams)
+- **When:** An Agent Teams teammate goes idle
+- **Audio:** "Teammate is now idle."
+- **Why disabled:** Only relevant for Agent Teams users
+- **Status:** ❌ Disabled by default
+
+#### **14. 🏁 TaskCompleted Hook** - Task Completed (Agent Teams)
+- **When:** An Agent Teams task is marked complete
+- **Audio:** "Team task completed."
+- **Why disabled:** Only relevant for Agent Teams users
 - **Status:** ❌ Disabled by default
 
 ---
@@ -674,11 +699,15 @@ bash scripts/configure.sh --help
 - `permission_request` - Permission dialog ("Allow this bash command?")
 - `pretooluse` - Before tool execution (can be noisy)
 - `posttooluse` - After tool execution (very noisy)
+- `posttoolusefailure` - Tool execution failure
 - `userpromptsubmit` - User prompt submission
 - `subagent_stop` - Subagent task completion
+- `subagent_start` - Subagent spawned
 - `precompact` - Before conversation compaction
 - `session_start` - Session start
 - `session_end` - Session end
+- `teammate_idle` - Agent Teams teammate idle
+- `task_completed` - Agent Teams task completed
 
 **Note:** All programmatic commands automatically save changes. Remember to restart Claude Code to apply them!
 
@@ -697,23 +726,31 @@ Edit `config/user_preferences.json`:
     "permission_request": true,   // 🔐 Permission dialogs
     "pretooluse": false,          // 🔨 Before tools
     "posttooluse": false,         // 📊 After tools
+    "posttoolusefailure": false,  // ❌ Tool failure
     "userpromptsubmit": false,    // 💬 Prompt submission
     "subagent_stop": true,        // 🤖 Subagent completion
+    "subagent_start": false,      // 🚀 Subagent spawned
     "precompact": false,          // 🗜️ Before compaction
     "session_start": false,       // 👋 Session start
-    "session_end": false          // 👋 Session end
+    "session_end": false,         // 👋 Session end
+    "teammate_idle": false,       // 💤 Teammate idle
+    "task_completed": false       // 🏁 Team task done
   },
   "audio_files": {
     "notification": "default/notification-urgent.mp3",
     "stop": "default/task-complete.mp3",
-    "permission_request": "default/notification-urgent.mp3",
+    "permission_request": "default/permission-request.mp3",
     "pretooluse": "default/task-starting.mp3",
     "posttooluse": "default/task-progress.mp3",
+    "posttoolusefailure": "default/tool-failed.mp3",
     "userpromptsubmit": "default/prompt-received.mp3",
     "subagent_stop": "default/subagent-complete.mp3",
+    "subagent_start": "default/subagent-start.mp3",
     "precompact": "default/notification-info.mp3",
     "session_start": "default/session-start.mp3",
-    "session_end": "default/session-end.mp3"
+    "session_end": "default/session-end.mp3",
+    "teammate_idle": "default/teammate-idle.mp3",
+    "task_completed": "default/team-task-done.mp3"
   },
   "playback_settings": {
     "queue_enabled": true,     // Prevent overlapping
@@ -908,13 +945,18 @@ All narrated by Jessica voice from ElevenLabs:
 |------|------|-------------|
 | `notification-urgent.mp3` | notification | "Attention! Claude needs your authorization." |
 | `task-complete.mp3` | stop | "Task completed successfully!" |
-| `subagent-complete.mp3` | subagent | "Background task finished!" |
+| `subagent-complete.mp3` | subagent_stop | "Background task finished!" |
 | `task-starting.mp3` | pretooluse | "Executing tool..." |
 | `task-progress.mp3` | posttooluse | "Tool execution complete." |
-| `prompt-received.mp3` | userprompt | "Prompt received." |
+| `prompt-received.mp3` | userpromptsubmit | "Prompt received." |
 | `notification-info.mp3` | precompact | "Compacting conversation history..." |
 | `session-start.mp3` | session_start | "Claude Code session started." |
 | `session-end.mp3` | session_end | "Session ended." |
+| `permission-request.mp3` | permission_request | "Permission required. Please review the action." |
+| `tool-failed.mp3` | posttoolusefailure | "Warning! Tool execution failed." |
+| `subagent-start.mp3` | subagent_start | "Background task starting." |
+| `teammate-idle.mp3` | teammate_idle | "Teammate is now idle." |
+| `team-task-done.mp3` | task_completed | "Team task completed." |
 
 #### **Chime Files** (`audio/custom/`)
 Modern UI sound effects:
@@ -1417,7 +1459,7 @@ bash scripts/uninstall.sh
 ```
 
 **The uninstaller will:**
-1. Remove all 9 hook scripts from `~/.claude/hooks/`
+1. Remove all 14 hook scripts from `~/.claude/hooks/`
 2. Remove shared library
 3. Backup and clean `settings.json`
 4. Backup and clean `settings.local.json`
@@ -1477,13 +1519,13 @@ To also see desktop notifications, go to **System Settings > Notifications > Scr
 
 ### **Q: Can I use different sounds for different hooks?**
 
-**A:** Absolutely! Each of the 9 hooks can have its own audio file. Edit `config/user_preferences.json` or use `scripts/configure.sh`.
+**A:** Absolutely! Each of the 14 hooks can have its own audio file. Edit `config/user_preferences.json` or use `scripts/configure.sh`.
 
 ### **Q: Why are some hooks disabled by default?**
 
 **A:** To prevent notification fatigue! PreToolUse and PostToolUse fire on EVERY tool execution, which can be dozens of times per Claude response. We enable only the 4 most useful hooks by default.
 
-### **Q: Can I enable all 9 hooks?**
+### **Q: Can I enable all 14 hooks?**
 
 **A:** Yes, but we don't recommend it! Run `bash scripts/configure.sh` to enable any hooks you want. Be warned: PostToolUse is VERY noisy.
 
@@ -1569,7 +1611,7 @@ claude-code-audio-hooks/
 │       ├── hook_logger.sh          # Hook logging utilities
 │       └── path_utils.sh           # Cross-platform path utilities (400+ lines)
 ├── audio/
-│   ├── default/                    # 9 professional ElevenLabs voice MP3s
+│   ├── default/                    # 14 professional ElevenLabs voice MP3s
 │   │   ├── notification-urgent.mp3  # Authorization alert
 │   │   ├── task-complete.mp3        # Task completion
 │   │   ├── task-starting.mp3        # Tool starting
@@ -1578,7 +1620,12 @@ claude-code-audio-hooks/
 │   │   ├── subagent-complete.mp3    # Subagent done
 │   │   ├── notification-info.mp3    # Info notification
 │   │   ├── session-start.mp3        # Session start
-│   │   └── session-end.mp3          # Session end
+│   │   ├── session-end.mp3          # Session end
+│   │   ├── permission-request.mp3   # Permission dialog
+│   │   ├── tool-failed.mp3          # Tool failure
+│   │   ├── subagent-start.mp3       # Subagent spawned
+│   │   ├── teammate-idle.mp3        # Teammate idle
+│   │   └── team-task-done.mp3       # Team task done
 │   └── custom/                     # 9 modern UI chime MP3s
 │       ├── chime-notification-urgent.mp3
 │       ├── chime-task-complete.mp3
@@ -1682,7 +1729,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 4.1.1** - Quick Setup + Desktop Notifications + TTS + PermissionRequest Hook + Context-Aware Alerts
+**Current Version: 4.2.0** - 14 Hook Types + Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 

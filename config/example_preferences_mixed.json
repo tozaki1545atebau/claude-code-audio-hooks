@@ -15,7 +15,12 @@
     "userpromptsubmit": "custom/chime-prompt-received.mp3",
     "precompact": "custom/chime-notification-info.mp3",
     "session_start": "default/session-start.mp3",
-    "session_end": "default/session-end.mp3"
+    "session_end": "default/session-end.mp3",
+    "permission_request": "default/permission-request.mp3",
+    "posttoolusefailure": "default/tool-failed.mp3",
+    "subagent_start": "custom/chime-subagent-start.mp3",
+    "teammate_idle": "custom/chime-teammate-idle.mp3",
+    "task_completed": "default/team-task-done.mp3"
   },
   "customization_examples": {
     "scenario_1_music_friendly": {
