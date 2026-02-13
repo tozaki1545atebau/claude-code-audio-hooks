@@ -70,6 +70,9 @@ detect_platform() {
 # We use distinct system sounds per event type for easy differentiation.
 
 generate_macos_hooks() {
+    # afplay plays system sounds directly (no permissions needed, works on all macOS versions)
+    # osascript notification is best-effort (may require notification permissions on macOS 15+)
+    # sound name is omitted from osascript to avoid double sound when notifications work
     cat <<'HOOKS_JSON'
 {
   "Stop": [
@@ -77,7 +80,7 @@ generate_macos_hooks() {
       "hooks": [
         {
           "type": "command",
-          "command": "osascript -e 'display notification \"Task completed\" with title \"Claude Code\" sound name \"Glass\"'",
+          "command": "afplay /System/Library/Sounds/Glass.aiff 2>/dev/null & osascript -e 'display notification \"Task completed\" with title \"Claude Code\"' 2>/dev/null; true",
           "timeout": 10
         }
       ]
@@ -88,7 +91,7 @@ generate_macos_hooks() {
       "hooks": [
         {
           "type": "command",
-          "command": "osascript -e 'display notification \"Authorization needed\" with title \"Claude Code\" sound name \"Sosumi\"'",
+          "command": "afplay /System/Library/Sounds/Sosumi.aiff 2>/dev/null & osascript -e 'display notification \"Authorization needed\" with title \"Claude Code\"' 2>/dev/null; true",
           "timeout": 10
         }
       ]
@@ -99,7 +102,7 @@ generate_macos_hooks() {
       "hooks": [
         {
           "type": "command",
-          "command": "osascript -e 'display notification \"Background task finished\" with title \"Claude Code\" sound name \"Pop\"'",
+          "command": "afplay /System/Library/Sounds/Pop.aiff 2>/dev/null & osascript -e 'display notification \"Background task finished\" with title \"Claude Code\"' 2>/dev/null; true",
           "timeout": 10
         }
       ]
@@ -351,7 +354,14 @@ main() {
     # Step 6: Mark as lite installation (for quick-unsetup to find)
     echo "lite" > "$claude_dir/.hooks_mode"
 
-    # Step 7: Print summary
+    # Step 7: Play confirmation sound so user gets immediate feedback
+    case "$PLATFORM" in
+        macos)
+            afplay /System/Library/Sounds/Glass.aiff 2>/dev/null &
+            ;;
+    esac
+
+    # Step 8: Print summary
     header "Setup Complete!"
     printf "\n"
     success "3 notification hooks installed:"
@@ -368,8 +378,11 @@ main() {
     case "$PLATFORM" in
         macos)
             printf "${BOLD}Platform notes (macOS):${NC}\n"
-            printf "  - Uses native macOS notifications (notification center)\n"
+            printf "  - Audio plays via afplay (works on all macOS versions, no permissions needed)\n"
             printf "  - System sounds: Glass (done), Sosumi (attention), Pop (background)\n"
+            printf "  - Desktop notifications via osascript (best-effort)\n"
+            printf "  - macOS 15+ (Sequoia): notifications may need permission in\n"
+            printf "    System Settings > Notifications > Script Editor\n"
             ;;
         linux)
             printf "${BOLD}Platform notes (Linux):${NC}\n"

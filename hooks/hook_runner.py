@@ -728,8 +728,10 @@ def send_desktop_notification(title: str, message: str, urgency: str = "normal")
 
     try:
         if system == "Darwin":
-            sound = "Sosumi" if urgency == "critical" else "Glass"
-            script = f'display notification "{safe_message}" with title "{safe_title}" sound name "{sound}"'
+            # Audio is handled separately by play_audio_macos() via afplay.
+            # Omit "sound name" to avoid double sound and to work on macOS 15+
+            # where osascript notifications may be silently blocked.
+            script = f'display notification "{safe_message}" with title "{safe_title}"'
             subprocess.Popen(
                 ["osascript", "-e", script],
                 stdout=subprocess.DEVNULL,

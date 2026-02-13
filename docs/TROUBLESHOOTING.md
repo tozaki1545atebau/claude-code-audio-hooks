@@ -207,6 +207,35 @@ powershell.exe -Command "Add-Type -AssemblyName presentationCore; Write-Host 'Au
 
 ### macOS-Specific Issues
 
+#### Issue: "No sound on macOS 15+ (Sequoia)" {#macos-sequoia}
+
+**Symptom:** Quick Setup completes successfully but no sound or notification appears. Full Install audio works fine (uses `afplay` directly).
+
+**Root cause:** macOS 15 (Sequoia) and later enforce strict per-app notification permissions. `osascript -e 'display notification ...'` internally uses Script Editor, which has no notification permission by default. The command exits successfully (exit code 0) but produces **no notification and no sound**.
+
+**Quick Setup fix (v4.1.0+):** Quick Setup now uses `afplay` for audio (no permissions needed) and `osascript` only for best-effort desktop notifications. Re-run Quick Setup to get the fix:
+```bash
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
+```
+
+**To also enable desktop notifications on macOS 15+:**
+1. Open **System Settings** > **Notifications**
+2. Scroll down to **Script Editor**
+3. Enable **Allow Notifications**
+4. Optionally enable banners/alerts style
+
+**Diagnosis:**
+```bash
+# Test afplay directly (should always work)
+afplay /System/Library/Sounds/Glass.aiff
+
+# Test osascript notification (may be silently blocked on macOS 15+)
+osascript -e 'display notification "Test" with title "Test"'
+
+# Check macOS version
+sw_vers -productVersion
+```
+
 #### Issue: "afplay not working"
 
 **Symptom:** No audio, afplay errors.

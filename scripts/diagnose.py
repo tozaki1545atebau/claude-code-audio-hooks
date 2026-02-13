@@ -380,6 +380,25 @@ def run_diagnostics(verbose: bool = False, test_audio: bool = False) -> int:
     if platform_info['is_git_bash']:
         print_info("Git Bash detected - audio will use Windows PowerShell")
 
+    # macOS version check for Sequoia notification permissions
+    if platform_info['system'] == "Darwin":
+        try:
+            mac_ver = platform.mac_ver()[0]  # e.g. "15.6"
+            if mac_ver:
+                major = int(mac_ver.split(".")[0])
+                print_info(f"macOS version: {mac_ver}")
+                if major >= 15:
+                    print_warn(
+                        f"macOS {major} (Sequoia+) restricts notification permissions. "
+                        "osascript notifications may be silently blocked."
+                    )
+                    print_info(
+                        "Audio via afplay works without permissions. "
+                        "To enable notifications: System Settings > Notifications > Script Editor"
+                    )
+        except (ValueError, IndexError):
+            pass
+
     # Section 2: Installation
     print_section("Installation")
 

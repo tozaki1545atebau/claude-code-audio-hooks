@@ -1437,6 +1437,18 @@ Then restart Claude Code.
 
 ## ❓ FAQ
 
+### **Q: I ran Quick Setup on macOS but hear no sound?**
+
+**A:** On macOS 15+ (Sequoia), `osascript` notifications are silently blocked by default. Quick Setup (v4.1.0+) now uses `afplay` for audio, which works without any permissions. Re-run Quick Setup to get the fix:
+```bash
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
+```
+To also see desktop notifications, go to **System Settings > Notifications > Script Editor** and enable notifications.
+
+### **Q: Quick Setup didn't create a project folder - is that normal?**
+
+**A:** Yes! Quick Setup only modifies `~/.claude/settings.json` with platform-native commands. It doesn't clone the repository or create any project folder. That's by design - zero dependencies. If you want custom MP3 audio, TTS, or advanced features, use the [Full Installation](#-full-installation) instead.
+
 ### **Q: Will this slow down Claude Code?**
 
 **A:** No! Audio plays in the background and doesn't affect Claude's performance at all. The queue and debounce systems ensure minimal overhead.

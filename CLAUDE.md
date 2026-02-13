@@ -249,6 +249,8 @@ python scripts/diagnose.py -v --test-audio
 | Issue | Cause | Solution |
 |-------|-------|----------|
 | No audio after install | Didn't restart Claude | Restart terminal/Claude Code |
+| macOS 15+ no sound (Quick Setup) | osascript notifications blocked | Re-run Quick Setup (now uses `afplay`) |
+| macOS no desktop notification | Script Editor lacks permission | System Settings > Notifications > Script Editor |
 | Path errors on Windows | Git Bash path format | Re-run installer (auto-converts) |
 | WSL no audio | PowerShell not accessible | Check `powershell.exe` works |
 | Linux no audio | No audio player | Install: `sudo apt install mpg123` |
