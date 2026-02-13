@@ -6,7 +6,7 @@ Get notified when Claude Code finishes tasks or needs your attention.
 Audio, desktop notifications, and text-to-speech - all platforms.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-4.0.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-4.1.1-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -64,6 +64,7 @@ Restart Claude Code. Done.
 **This gives you:**
 - Desktop notification + sound when tasks complete
 - Urgent alert when authorization is needed
+- Alert when permission dialog appears ("Allow this bash command?")
 - Background task completion alerts
 
 **To remove:**
@@ -86,7 +87,7 @@ Want custom audio, TTS, or advanced features? See [Full Installation](#-full-ins
 | **Text-to-speech** | No | No | Yes |
 | **Context-aware alerts** | No | No | Yes ("Permission needed for Bash") |
 | **Debouncing** | No | No | Yes |
-| **Per-hook config** | No | No | Yes (9 hook types) |
+| **Per-hook config** | No | No | Yes (10 hook types) |
 | **Logging/diagnostics** | No | No | Yes |
 
 ---
@@ -97,7 +98,7 @@ Want custom audio, TTS, or advanced features? See [Full Installation](#-full-ins
 - [Comparison](#comparison)
 - [What Does This Do?](#what-does-this-do)
 - [Full Installation](#-full-installation)
-- [The 9 Notification Types](#-the-9-notification-types)
+- [The 10 Notification Types](#-the-10-notification-types)
 - [Configuration](#-configuration)
 - [Desktop Notifications & TTS](#-desktop-notifications--tts)
 - [Audio Customization Options](#-audio-customization-options)
@@ -422,24 +423,27 @@ bash scripts/install-complete.sh
 
 ---
 
-## 🎵 The 9 Notification Types
+## 🎵 The 10 Notification Types
 
-### **✅ Enabled by Default (3 Essential Hooks)**
+### **✅ Enabled by Default (4 Essential Hooks)**
 
 ```mermaid
 graph LR
-    A[Claude Code Events] --> B[Notification Hook<br/>⚠️ Permission Prompts]
+    A[Claude Code Events] --> B[Notification Hook<br/>⚠️ Authorization Prompts]
     A --> C[Stop Hook<br/>✅ Task Complete]
     A --> D[SubagentStop Hook<br/>🤖 Background Tasks]
+    A --> F[PermissionRequest Hook<br/>🔐 Permission Dialogs]
 
     B --> E[Audio Alert]
     C --> E
     D --> E
+    F --> E
 
     style A fill:#4A90E2
     style B fill:#F5A623
     style C fill:#7ED321
     style D fill:#BD10E0
+    style F fill:#D0021B
     style E fill:#50E3C2
 ```
 
@@ -461,6 +465,13 @@ graph LR
 - **Audio:** "Subagent task completed."
 - **Why enabled:** Important for long-running operations using Task tool
 - **Status:** ✅ Enabled by default
+
+#### **4. 🔐 PermissionRequest Hook** - Permission Dialog Alert ⭐ NEW
+- **When:** Claude shows the "Allow this bash command?" permission dialog
+- **Audio:** "Attention! Claude needs your authorization." (same as notification-urgent.mp3)
+- **Why enabled:** **Without this, you won't know the tool is waiting for your input!**
+- **Status:** ✅ Enabled by default (v4.1.1+)
+- **Note:** Uses a distinct sound from `Notification` in Quick Setup to help differentiate
 
 ---
 
@@ -512,7 +523,8 @@ These hooks are available but disabled to avoid noise. Enable them in `config/us
 - ✅ Stop (Every response completion)
 
 **Occasional (Few times per session):**
-- ⚠️ Notification (Permission prompts)
+- ⚠️ Notification (Authorization prompts)
+- 🔐 PermissionRequest (Permission dialogs - "Allow this bash command?")
 - 🤖 SubagentStop (Background tasks)
 
 **If you enable optional hooks (not recommended):**
@@ -659,6 +671,7 @@ bash scripts/configure.sh --help
 **Available hooks:**
 - `notification` - Authorization/confirmation requests (CRITICAL)
 - `stop` - Task completion
+- `permission_request` - Permission dialog ("Allow this bash command?")
 - `pretooluse` - Before tool execution (can be noisy)
 - `posttooluse` - After tool execution (very noisy)
 - `userpromptsubmit` - User prompt submission
@@ -679,19 +692,21 @@ Edit `config/user_preferences.json`:
 {
   "version": "2.0.0",
   "enabled_hooks": {
-    "notification": true,      // ⚠️ Authorization alerts
-    "stop": true,              // ✅ Task completion
-    "pretooluse": false,       // 🔨 Before tools
-    "posttooluse": false,      // 📊 After tools
-    "userpromptsubmit": false, // 💬 Prompt submission
-    "subagent_stop": true,     // 🤖 Subagent completion
-    "precompact": false,       // 🗜️ Before compaction
-    "session_start": false,    // 👋 Session start
-    "session_end": false       // 👋 Session end
+    "notification": true,         // ⚠️ Authorization alerts
+    "stop": true,                 // ✅ Task completion
+    "permission_request": true,   // 🔐 Permission dialogs
+    "pretooluse": false,          // 🔨 Before tools
+    "posttooluse": false,         // 📊 After tools
+    "userpromptsubmit": false,    // 💬 Prompt submission
+    "subagent_stop": true,        // 🤖 Subagent completion
+    "precompact": false,          // 🗜️ Before compaction
+    "session_start": false,       // 👋 Session start
+    "session_end": false          // 👋 Session end
   },
   "audio_files": {
     "notification": "default/notification-urgent.mp3",
     "stop": "default/task-complete.mp3",
+    "permission_request": "default/notification-urgent.mp3",
     "pretooluse": "default/task-starting.mp3",
     "posttooluse": "default/task-progress.mp3",
     "userpromptsubmit": "default/prompt-received.mp3",
@@ -1466,7 +1481,7 @@ To also see desktop notifications, go to **System Settings > Notifications > Scr
 
 ### **Q: Why are some hooks disabled by default?**
 
-**A:** To prevent notification fatigue! PreToolUse and PostToolUse fire on EVERY tool execution, which can be dozens of times per Claude response. We enable only the 3 most useful hooks by default.
+**A:** To prevent notification fatigue! PreToolUse and PostToolUse fire on EVERY tool execution, which can be dozens of times per Claude response. We enable only the 4 most useful hooks by default.
 
 ### **Q: Can I enable all 9 hooks?**
 
@@ -1667,7 +1682,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 4.0.0** - Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts
+**Current Version: 4.1.1** - Quick Setup + Desktop Notifications + TTS + PermissionRequest Hook + Context-Aware Alerts
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 

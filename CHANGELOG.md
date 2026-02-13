@@ -5,6 +5,61 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.1.1] - 2026-02-13
+
+### Feature: PermissionRequest Hook Support
+
+Adds `PermissionRequest` hook support — the "Allow this bash command?" permission dialog now triggers audio and desktop notifications. Closes #5.
+
+### Added
+
+- **`PermissionRequest` hook** — 4th default-enabled hook across all installation tiers
+  - Quick Setup (macOS): Basso.aiff (distinct from Sosumi for Notification)
+  - Quick Setup (Linux): dialog-warning.oga
+  - Quick Setup (WSL/Git Bash): SystemSounds.Question
+  - Full Install (all platforms): notification-urgent.mp3
+- Context extraction for permission_request: shows `Permission needed: <tool_name>`
+- Critical urgency desktop notifications for permission_request (same as notification)
+- TTS message: "Permission required"
+
+### Changed
+
+- `hooks/hook_runner.py` — Added permission_request to defaults, context extraction, critical urgency
+- `scripts/quick-setup.sh` — Added PermissionRequest as 4th hook with distinct system sounds
+- `scripts/install-complete.sh` — Registered PermissionRequest with matcher
+- `scripts/install-windows.ps1` — Registered PermissionRequest with matcher
+- `config/default_preferences.json` / `config/user_preferences.json` — Added permission_request entries
+- `CLAUDE.md` — Updated hook diagrams, tables, settings examples
+- `README.md` — Updated notification types from 9→10, added PermissionRequest documentation
+
+### Upgrade
+
+Re-run your installer to register the new hook:
+```bash
+# Quick Setup
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-setup.sh | bash
+
+# Full Install
+bash scripts/install-complete.sh      # macOS/Linux/WSL/Git Bash
+.\scripts\install-windows.ps1         # Windows PowerShell
+```
+
+---
+
+## [4.1.0] - 2026-02-13
+
+### Fix: macOS Sequoia (15+) Quick Setup No Audio
+
+Quick Setup on macOS 15+ (Sequoia) produced no sound because `osascript` notifications were silently blocked.
+
+### Fixed
+
+- Quick Setup now uses `afplay` for audio playback (works without permissions on all macOS versions)
+- `osascript` notification kept as best-effort for desktop popups
+- Each hook uses a distinct system sound: Glass (Stop), Sosumi (Notification), Pop (SubagentStop)
+
+---
+
 ## [4.0.3] - 2026-02-11
 
 ### Bug Fixes: Installer & Uninstaller Correctness

@@ -1,6 +1,6 @@
 # System Architecture
 
-> **Version:** 3.3.4 | **Last Updated:** 2025-12-22
+> **Version:** 4.1.1 | **Last Updated:** 2026-02-13
 
 This document explains the technical architecture of Claude Code Audio Hooks.
 
@@ -80,6 +80,7 @@ Claude Code provides a hooks system that executes commands at specific lifecycle
 | `PostToolUse` | After tool execution | Post-action notification |
 | `UserPromptSubmit` | User sends message | Acknowledge input |
 | `SubagentStop` | Background task done | Notify subagent completion |
+| `PermissionRequest` | Permission dialog appears | Alert user to approve command |
 | `PreCompact` | Context compaction | Notify memory optimization |
 
 ### 2. Hook Runner (Python)
@@ -212,6 +213,7 @@ graph LR
     "notification": true,
     "stop": true,
     "subagent_stop": true,
+    "permission_request": true,
     "session_start": false,
     "session_end": false,
     "pretooluse": false,

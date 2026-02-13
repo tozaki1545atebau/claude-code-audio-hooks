@@ -1,6 +1,6 @@
 # Installation Guide
 
-> **Version:** 3.3.4 | **Last Updated:** 2025-12-22
+> **Version:** 4.1.1 | **Last Updated:** 2026-02-13
 
 Complete installation guide for all platforms and environments.
 
@@ -332,13 +332,14 @@ nano ~/claude-code-audio-hooks/config/user_preferences.json
 ```json
 {
   "enabled_hooks": {
-    "notification": true,    // KEEP: Important alerts
-    "stop": true,            // KEEP: Task completion
-    "subagent_stop": true,   // KEEP: Background tasks
-    "session_start": false,  // Optional
-    "session_end": false,    // Optional
-    "pretooluse": false,     // DISABLE: Too noisy
-    "posttooluse": false,    // DISABLE: Too noisy
+    "notification": true,         // KEEP: Important alerts
+    "stop": true,                 // KEEP: Task completion
+    "subagent_stop": true,        // KEEP: Background tasks
+    "permission_request": true,   // KEEP: Permission dialogs
+    "session_start": false,       // Optional
+    "session_end": false,         // Optional
+    "pretooluse": false,          // DISABLE: Too noisy
+    "posttooluse": false,         // DISABLE: Too noisy
     "userpromptsubmit": false,
     "precompact": false
   }
