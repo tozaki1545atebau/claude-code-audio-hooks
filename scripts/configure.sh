@@ -390,6 +390,15 @@ cmd_theme() {
         else
             echo -e "  Using non-voice chimes from audio/custom/"
         fi
+
+        # Sync hook_runner.py to ~/.claude/hooks/ so the installed copy is up-to-date
+        local installed_runner="$HOME/.claude/hooks/hook_runner.py"
+        local source_runner="$PROJECT_DIR/hooks/hook_runner.py"
+        if [ -f "$source_runner" ] && [ -d "$HOME/.claude/hooks" ]; then
+            cp "$source_runner" "$installed_runner"
+            echo -e "${GREEN}✓${NC} Updated hook_runner.py in ~/.claude/hooks/"
+        fi
+
         echo -e "${YELLOW}Remember to restart Claude Code to apply changes${NC}"
     else
         echo -e "${RED}✗${NC} Failed to switch theme" >&2

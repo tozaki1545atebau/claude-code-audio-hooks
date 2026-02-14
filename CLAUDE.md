@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.2.0 | **Last Updated:** 2026-02-13
+> **Version:** 4.2.2 | **Last Updated:** 2026-02-14
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -382,6 +382,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.2.2 | 2026-02-14 | Robust theme switching: remove conflicting `audio_files` config, add hook_runner.py auto-sync from project dir, configure.sh syncs on theme switch |
 | 4.2.0 | 2026-02-13 | Add 4 new hooks (PostToolUseFailure, SubagentStart, TeammateIdle, TaskCompleted), 14 total hooks, 14 unique audio files |
 | 4.0.3 | 2026-02-11 | Fix Windows installer hook filtering, uninstaller hook_runner.py detection, defensive wrapping |
 | 4.0.0 | 2026-02-10 | Quick Setup (Lite tier), desktop notifications, TTS, context-aware alerts |

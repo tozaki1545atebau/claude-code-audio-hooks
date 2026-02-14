@@ -52,25 +52,6 @@
     "task_completed": false
   },
 
-  "audio_files": {
-    "_comment": "Paths relative to audio/ directory. Use 'default/' for built-in files or 'custom/' for your own.",
-
-    "notification": "default/notification-urgent.mp3",
-    "stop": "default/task-complete.mp3",
-    "pretooluse": "default/task-starting.mp3",
-    "posttooluse": "default/task-progress.mp3",
-    "userpromptsubmit": "default/prompt-received.mp3",
-    "subagent_stop": "default/subagent-complete.mp3",
-    "precompact": "default/notification-info.mp3",
-    "session_start": "default/session-start.mp3",
-    "session_end": "default/session-end.mp3",
-    "permission_request": "default/permission-request.mp3",
-    "posttoolusefailure": "default/tool-failed.mp3",
-    "subagent_start": "default/subagent-start.mp3",
-    "teammate_idle": "default/teammate-idle.mp3",
-    "task_completed": "default/team-task-done.mp3"
-  },
-
   "playback_settings": {
     "_comment_queue": "Enable audio queue to prevent overlapping sounds",
     "queue_enabled": true,

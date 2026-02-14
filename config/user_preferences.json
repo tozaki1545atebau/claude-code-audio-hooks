@@ -6,7 +6,7 @@
   "version": "2.0.0",
 
   "_comment_audio_theme": "Audio theme: 'default' for voice recordings, 'custom' for non-voice chimes. Change this one line to switch all audio.",
-  "audio_theme": "default",
+  "audio_theme": "custom",
 
   "enabled_hooks": {
     "_comment_notification": "✅ ENABLED - Plays when Claude needs authorization ('Do you want to proceed?')",
@@ -15,60 +15,41 @@
     "_comment_stop": "✅ ENABLED - Plays when Claude finishes responding",
     "stop": true,
 
-    "_comment_pretooluse": "❌ DISABLED - Would play before EVERY tool execution (too frequent)",
-    "pretooluse": false,
+    "_comment_pretooluse": "✅ ENABLED - Plays before EVERY tool execution",
+    "pretooluse": true,
 
-    "_comment_posttooluse": "❌ DISABLED - Would play after EVERY tool execution (too frequent)",
-    "posttooluse": false,
+    "_comment_posttooluse": "✅ ENABLED - Plays after EVERY tool execution",
+    "posttooluse": true,
 
-    "_comment_userpromptsubmit": "❌ DISABLED - Would play when you submit a prompt (not needed)",
-    "userpromptsubmit": false,
+    "_comment_userpromptsubmit": "✅ ENABLED - Plays when you submit a prompt",
+    "userpromptsubmit": true,
 
     "_comment_subagent_stop": "✅ ENABLED - Plays when background tasks complete",
     "subagent_stop": true,
 
-    "_comment_precompact": "❌ DISABLED - Would play before conversation compaction (rare, not needed)",
-    "precompact": false,
+    "_comment_precompact": "✅ ENABLED - Plays before conversation compaction",
+    "precompact": true,
 
-    "_comment_session_start": "❌ DISABLED - Would play when session starts (not needed)",
-    "session_start": false,
+    "_comment_session_start": "✅ ENABLED - Plays when session starts",
+    "session_start": true,
 
-    "_comment_session_end": "❌ DISABLED - Would play when session ends (not needed)",
-    "session_end": false,
+    "_comment_session_end": "✅ ENABLED - Plays when session ends",
+    "session_end": true,
 
-    "_comment_permission_request": "Plays when permission dialog appears ('Allow this bash command?') - HIGHLY RECOMMENDED",
+    "_comment_permission_request": "✅ ENABLED - Plays when permission dialog appears",
     "permission_request": true,
 
-    "_comment_posttoolusefailure": "❌ DISABLED - Would play when a tool execution fails",
-    "posttoolusefailure": false,
+    "_comment_posttoolusefailure": "✅ ENABLED - Plays when a tool execution fails",
+    "posttoolusefailure": true,
 
-    "_comment_subagent_start": "❌ DISABLED - Would play when a background task starts",
-    "subagent_start": false,
+    "_comment_subagent_start": "✅ ENABLED - Plays when a background task starts",
+    "subagent_start": true,
 
-    "_comment_teammate_idle": "❌ DISABLED - Would play when an Agent Teams teammate goes idle",
-    "teammate_idle": false,
+    "_comment_teammate_idle": "✅ ENABLED - Plays when an Agent Teams teammate goes idle",
+    "teammate_idle": true,
 
-    "_comment_task_completed": "❌ DISABLED - Would play when an Agent Teams task is completed",
-    "task_completed": false
-  },
-
-  "audio_files": {
-    "_comment": "Paths relative to audio/ directory. Use 'default/' for built-in files or 'custom/' for your own.",
-
-    "notification": "default/notification-urgent.mp3",
-    "stop": "default/task-complete.mp3",
-    "pretooluse": "default/task-starting.mp3",
-    "posttooluse": "default/task-progress.mp3",
-    "userpromptsubmit": "default/prompt-received.mp3",
-    "subagent_stop": "default/subagent-complete.mp3",
-    "precompact": "default/notification-info.mp3",
-    "session_start": "default/session-start.mp3",
-    "session_end": "default/session-end.mp3",
-    "permission_request": "default/permission-request.mp3",
-    "posttoolusefailure": "default/tool-failed.mp3",
-    "subagent_start": "default/subagent-start.mp3",
-    "teammate_idle": "default/teammate-idle.mp3",
-    "task_completed": "default/team-task-done.mp3"
+    "_comment_task_completed": "✅ ENABLED - Plays when an Agent Teams task is completed",
+    "task_completed": true
   },
 
   "playback_settings": {

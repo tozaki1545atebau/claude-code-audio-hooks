@@ -27,6 +27,10 @@ import re
 from pathlib import Path
 from typing import Optional, Dict, Any, List
 
+# Version used for auto-sync: when the installed copy in ~/.claude/hooks/
+# detects a newer version in the project directory, it self-updates.
+HOOK_RUNNER_VERSION = "4.2.2"
+
 # =============================================================================
 # DEBUG LOGGING SYSTEM
 # =============================================================================
@@ -201,6 +205,62 @@ def get_safe_temp_dir() -> Path:
     return fallback
 
 # =============================================================================
+# AUTO-SYNC (self-update from project directory)
+# =============================================================================
+
+def check_and_self_update() -> None:
+    """If running from ~/.claude/hooks/, check the project copy for a newer version.
+
+    When a newer version is found in the project directory, copy it over the
+    installed copy and re-execute so the user always runs the latest code after
+    a `git pull`.  The entire function is wrapped in a try/except so it never
+    blocks hook execution.
+    """
+    try:
+        installed_path = Path(__file__).resolve()
+
+        # Only run when executing from ~/.claude/hooks/ (not the project dir)
+        claude_hooks_dir = Path.home() / ".claude" / "hooks"
+        if not str(installed_path).startswith(str(claude_hooks_dir)):
+            return
+
+        # Read .project_path to find the project copy
+        project_path_file = claude_hooks_dir / ".project_path"
+        if not project_path_file.exists():
+            return
+
+        raw_path = project_path_file.read_text(encoding="utf-8-sig").strip()
+        raw_path = normalize_path(raw_path)
+        project_runner = Path(raw_path) / "hooks" / "hook_runner.py"
+        if not project_runner.exists():
+            return
+
+        # Extract HOOK_RUNNER_VERSION from the project copy
+        project_source = project_runner.read_text(encoding="utf-8")
+        match = re.search(r'^HOOK_RUNNER_VERSION\s*=\s*["\']([^"\']+)["\']',
+                          project_source, re.MULTILINE)
+        if not match:
+            return
+
+        project_version = match.group(1)
+        # Simple tuple comparison: "4.2.2" -> (4, 2, 2)
+        def ver_tuple(v: str):
+            return tuple(int(x) for x in v.split("."))
+
+        if ver_tuple(project_version) <= ver_tuple(HOOK_RUNNER_VERSION):
+            return
+
+        # Project copy is newer — update ourselves
+        shutil.copy2(str(project_runner), str(installed_path))
+
+        # Re-execute with the same arguments so the new code runs
+        os.execv(sys.executable, [sys.executable, str(installed_path)] + sys.argv[1:])
+
+    except Exception:
+        # Never block hook execution
+        pass
+
+# =============================================================================
 # CONFIGURATION
 # =============================================================================
 
@@ -345,23 +405,26 @@ def get_audio_file(hook_type: str) -> Optional[Path]:
     """Get the audio file path for a hook type.
 
     Resolution order:
-    1. Per-hook override in audio_files config
+    1. Per-hook override in audio_files config (only if user customized it)
     2. audio_theme setting ("default" or "custom")
     3. Fallback to audio/default/
     """
     config = load_config()
+    theme = config.get("audio_theme", "default")
     default_file = DEFAULT_AUDIO_FILES.get(hook_type, "notification-info.mp3")
 
-    # 1. Check per-hook override in audio_files config
+    # 1. Check per-hook override — only if it differs from the default mapping
+    #    Paths like "default/<filename>" match the default template and should
+    #    not override the audio_theme setting.
     audio_files = config.get("audio_files", {})
-    if hook_type in audio_files:
+    default_pattern = f"default/{default_file}"
+    if hook_type in audio_files and audio_files[hook_type] != default_pattern:
         override_path = AUDIO_DIR / audio_files[hook_type]
         if override_path.exists():
             log_debug(f"Audio file for {hook_type} (override): {override_path}")
             return override_path
 
     # 2. Use audio_theme setting
-    theme = config.get("audio_theme", "default")
     if theme == "custom":
         custom_file = CUSTOM_AUDIO_FILES.get(hook_type, default_file)
         theme_path = AUDIO_DIR / "custom" / custom_file
@@ -1010,6 +1073,9 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
 
 def main() -> int:
     """Main entry point."""
+    # Auto-update from project directory if a newer version exists
+    check_and_self_update()
+
     # Check Python version
     if sys.version_info < (3, 6):
         print("Error: Python 3.6 or higher is required", file=sys.stderr)

@@ -6,7 +6,7 @@ Get notified when Claude Code finishes tasks or needs your attention.
 Audio, desktop notifications, and text-to-speech - all platforms.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-4.2.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-4.2.2-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -233,7 +233,7 @@ graph TB
 | **Native Linux** | ✅ Fully supported | mpg123/aplay | `bash scripts/install-complete.sh` |
 | **Cygwin** | ✅ Fully supported | PowerShell | `bash scripts/install-complete.sh` |
 
-> **NEW in v4.2.0:** Full coverage of all 14 Claude Code hook events! Windows users can install directly using PowerShell - no Git Bash required!
+> **NEW in v4.2.2:** Robust audio theme switching, auto-sync after `git pull`, full coverage of all 14 Claude Code hook events! Windows users can install directly using PowerShell - no Git Bash required!
 
 > **Note for Git Bash Users:** Version 2.2+ includes automatic path conversion to handle Git Bash's Unix-style paths. The installer will configure this automatically—no manual setup required!
 
@@ -263,7 +263,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 4.2.0 from
+Please install Claude Code Audio Hooks version 4.2.2 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -602,6 +602,24 @@ sequenceDiagram
 
 ## ⚙️ Configuration
 
+### **🤖 Ask Claude Code (Fastest Way)**
+
+Already using Claude Code? Just tell it what you want in plain language:
+
+| What you want | What to say |
+|---|---|
+| **Switch to chime sounds** | *"Switch my audio hooks to chime sounds"* |
+| **Switch back to voice** | *"Switch my audio hooks to voice/default theme"* |
+| **Enable a hook** | *"Enable the session_start and session_end hooks"* |
+| **Disable a hook** | *"Disable the pretooluse and posttooluse hooks"* |
+| **Enable all hooks** | *"Enable all 14 audio hooks"* |
+| **Reset to defaults** | *"Reset audio hooks to recommended defaults"* |
+| **Check current config** | *"Show me which audio hooks are enabled"* |
+
+Claude Code reads the project's `CLAUDE.md` and knows exactly which files to edit and which commands to run.
+
+---
+
 ### **🚀 Dual-Mode Configuration Tool**
 
 The `configure.sh` script supports **both interactive and programmatic modes** - perfect for humans AND Claude Code!
@@ -720,6 +738,7 @@ Edit `config/user_preferences.json`:
 ```json
 {
   "version": "2.0.0",
+  "audio_theme": "default",
   "enabled_hooks": {
     "notification": true,         // ⚠️ Authorization alerts
     "stop": true,                 // ✅ Task completion
@@ -736,22 +755,6 @@ Edit `config/user_preferences.json`:
     "teammate_idle": false,       // 💤 Teammate idle
     "task_completed": false       // 🏁 Team task done
   },
-  "audio_files": {
-    "notification": "default/notification-urgent.mp3",
-    "stop": "default/task-complete.mp3",
-    "permission_request": "default/permission-request.mp3",
-    "pretooluse": "default/task-starting.mp3",
-    "posttooluse": "default/task-progress.mp3",
-    "posttoolusefailure": "default/tool-failed.mp3",
-    "userpromptsubmit": "default/prompt-received.mp3",
-    "subagent_stop": "default/subagent-complete.mp3",
-    "subagent_start": "default/subagent-start.mp3",
-    "precompact": "default/notification-info.mp3",
-    "session_start": "default/session-start.mp3",
-    "session_end": "default/session-end.mp3",
-    "teammate_idle": "default/teammate-idle.mp3",
-    "task_completed": "default/team-task-done.mp3"
-  },
   "playback_settings": {
     "queue_enabled": true,     // Prevent overlapping
     "max_queue_size": 5,       // Max queued sounds
@@ -759,6 +762,8 @@ Edit `config/user_preferences.json`:
   }
 }
 ```
+
+> **Note:** The `audio_theme` field controls which sound set is used for **all** hooks at once (`"default"` = voice, `"custom"` = chimes). You do NOT need an `audio_files` section — just change `audio_theme` and restart Claude Code.
 
 After editing, restart Claude Code for changes to take effect.
 
@@ -867,7 +872,7 @@ claude "Explain how HTTP works in detail"
 
 ## 🎵 Audio Customization Options
 
-Starting from v2.4.0, you have **complete flexibility** in choosing your audio notifications! The project now includes **two complete audio sets**:
+The project includes **two complete audio sets** with 14 sounds each:
 
 ### **🎤 Option 1: Voice Notifications (Default)**
 Professional ElevenLabs voice recordings in `audio/default/` - perfect for clear, spoken alerts.
@@ -879,61 +884,49 @@ Modern UI sound effects in `audio/custom/` - ideal for users who:
 - Dislike AI voices
 - Want subtle, non-intrusive notifications
 
-### **🎨 Option 3: Mixed Configuration**
-Customize each hook individually - use chimes for some, voice for others!
-
 ---
 
-### **Quick Start: Switch to Chimes**
+### **Quick Start: Switch Audio Theme**
 
-Want to use chimes instead of voice? Two ways:
+**Ask Claude Code** (easiest):
+```
+Switch my audio hooks to chime sounds
+```
+Or switch back:
+```
+Switch my audio hooks to voice sounds
+```
 
-**Method 1: One command** (recommended)
+**Method 1: One command**
 ```bash
-bash scripts/configure.sh --theme custom
+bash scripts/configure.sh --theme custom    # Switch to chimes
+bash scripts/configure.sh --theme default   # Switch back to voice
 ```
 
 **Method 2: Edit one line in config** (`config/user_preferences.json`)
 ```json
 "audio_theme": "custom"
 ```
-Change `"default"` to `"custom"` and restart Claude Code.
+Change `"default"` to `"custom"` (or vice versa) and restart Claude Code.
 
-**Switch back to voice anytime:**
-```bash
-bash scripts/configure.sh --theme default
-```
-Or change `"audio_theme"` back to `"default"` in the config file.
-
-> **Tip for Claude Code users:** Just tell Claude Code: *"Switch my audio hooks to chime sounds"* and it will make the change for you!
+> **How it works:** The `audio_theme` field switches **all 14 hooks** between voice recordings and chime sounds in one step. No need to configure individual audio file paths.
 
 ---
 
-### **Advanced: Mixed Audio Configuration**
+### **Advanced: Per-Hook Audio Override**
 
-Want chimes for permission requests but voice for task completion? Use the mixed example:
+Want a specific hook to use a different sound? Add an `audio_files` section to `config/user_preferences.json` with **only the hooks you want to override**:
 
-```bash
-cd ~/claude-code-audio-hooks
-
-# Use the mixed configuration template
-cp config/example_preferences_mixed.json config/user_preferences.json
-
-# Or customize it yourself by editing:
-nano config/user_preferences.json
-```
-
-**Example mixed configuration:**
 ```json
 {
-  "enabled_hooks": ["notification", "stop", "subagent"],
+  "audio_theme": "custom",
   "audio_files": {
-    "notification": "custom/chime-notification-urgent.mp3",  // Chime for permissions
-    "stop": "default/task-complete.mp3",                     // Voice for completion
-    "subagent": "custom/chime-subagent-complete.mp3"         // Chime for background tasks
+    "stop": "default/task-complete.mp3"
   }
 }
 ```
+
+This plays voice for task completion but chimes for everything else. Only list the hooks you want to override — unlisted hooks follow `audio_theme`.
 
 ---
 
@@ -983,44 +976,49 @@ Modern UI sound effects (no voice):
 
 ### **Configuration Examples**
 
-#### **Scenario 1: Music-Friendly Setup**
-You play music while coding and only need alerts for permission requests:
+#### **Scenario 1: Music-Friendly Chimes**
+You play music while coding — use chimes so notifications blend in:
 
+```
+Tell Claude Code: "Switch to chime audio and only enable notification and permission_request hooks"
+```
+
+Or manually in `config/user_preferences.json`:
 ```json
 {
-  "enabled_hooks": ["notification"],
-  "audio_files": {
-    "notification": "custom/chime-notification-urgent.mp3"
+  "audio_theme": "custom",
+  "enabled_hooks": {
+    "notification": true,
+    "permission_request": true,
+    "stop": false,
+    "subagent_stop": false
   }
 }
 ```
 
-#### **Scenario 2: Minimal Voice**
-Chimes for frequent events, voice for important completions:
+#### **Scenario 2: Voice for Completions, Chimes for the Rest**
+Hear a spoken "Task completed!" but subtle chimes for other events:
 
 ```json
 {
-  "enabled_hooks": ["notification", "stop", "subagent"],
+  "audio_theme": "custom",
   "audio_files": {
-    "notification": "custom/chime-notification-urgent.mp3",
-    "stop": "default/task-complete.mp3",
-    "subagent": "default/subagent-complete.mp3"
-  }
-}
-```
-
-#### **Scenario 3: Granular Control**
-Different sounds for different workflow stages:
-
-```json
-{
-  "enabled_hooks": ["notification", "stop", "pretooluse"],
-  "audio_files": {
-    "notification": "custom/chime-notification-urgent.mp3",
-    "pretooluse": "custom/chime-task-starting.mp3",
     "stop": "default/task-complete.mp3"
   }
 }
+```
+
+#### **Scenario 3: All 14 Hooks with Chimes**
+Maximum awareness with non-intrusive sounds:
+
+```
+Tell Claude Code: "Enable all 14 hooks and switch to chime audio theme"
+```
+
+Or via CLI:
+```bash
+bash scripts/configure.sh --theme custom
+bash scripts/configure.sh --enable notification stop pretooluse posttooluse posttoolusefailure userpromptsubmit subagent_stop subagent_start precompact session_start session_end permission_request teammate_idle task_completed
 ```
 
 ---
@@ -1774,7 +1772,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 4.2.0** - 14 Hook Types + Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts
+**Current Version: 4.2.2** - 14 Hook Types + Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts + Auto-Sync
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 
