@@ -5,6 +5,35 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.2.2] - 2026-02-14
+
+### Fixed
+- **Audio theme switching broken**: The `audio_files` section in config templates hardcoded all 14 hooks to `default/...`, silently overriding the `audio_theme` setting — switching to `"custom"` had no effect
+- **`get_audio_file()` logic**: Now ignores `audio_files` entries that match the default template pattern (`default/<filename>`), so `audio_theme` is always respected
+- **Stale installed copy**: `~/.claude/hooks/hook_runner.py` was copied once at install and never updated after `git pull`
+- **`configure.sh --theme` incomplete**: Only edited JSON config without syncing `hook_runner.py` to `~/.claude/hooks/`
+
+### Added
+- **Auto-sync**: `hook_runner.py` now includes `HOOK_RUNNER_VERSION` constant and `check_and_self_update()` — the installed copy in `~/.claude/hooks/` detects newer versions in the project directory and self-updates on next hook trigger
+- **configure.sh hook_runner sync**: `--theme` command now copies `hook_runner.py` to `~/.claude/hooks/` after switching theme
+- **README "Ask Claude Code" table**: Quick-reference showing users what to say to Claude Code for theme switching, hook toggling, and config checks
+
+### Changed
+- Removed `audio_files` block from `config/default_preferences.json` and `config/user_preferences.json` (backward compatible — `get_audio_file()` handles missing section via `config.get("audio_files", {})`)
+- Updated README config examples to use `audio_theme` instead of per-hook `audio_files`
+- Updated version references to 4.2.2 across CLAUDE.md, README.md
+
+### Upgrade
+
+No reinstall needed — existing installations self-update automatically on the next hook trigger after `git pull`. Or force sync now:
+```bash
+cd ~/claude-code-audio-hooks
+git pull
+cp hooks/hook_runner.py ~/.claude/hooks/hook_runner.py
+```
+
+---
+
 ## [4.2.0] - 2026-02-13
 
 ### Added
