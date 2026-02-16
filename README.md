@@ -72,6 +72,21 @@ Restart Claude Code. Done.
 curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-unsetup.sh | bash
 ```
 
+**Customize which hooks are active** (no clone needed):
+```bash
+# See which hooks are enabled/disabled
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-configure.sh | bash -s -- --list
+
+# Disable a noisy hook
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-configure.sh | bash -s -- --disable SubagentStop
+
+# Re-enable it later
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-configure.sh | bash -s -- --enable SubagentStop
+
+# Keep only specific hooks (disables the rest)
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-configure.sh | bash -s -- --only Stop Notification
+```
+
 Want custom audio, TTS, or advanced features? See [Full Installation](#-full-installation) below.
 
 ---
@@ -1958,7 +1973,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 4.2.2** - 14 Hook Types + Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts + Auto-Sync
+**Current Version: 4.3.1** - 14 Hook Types + Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts + Auto-Sync
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 

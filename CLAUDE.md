@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.3.0 | **Last Updated:** 2026-02-17
+> **Version:** 4.3.1 | **Last Updated:** 2026-02-17
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -106,6 +106,7 @@ claude-code-audio-hooks/
 │
 ├── scripts/
 │   ├── quick-setup.sh           # Lite tier installer (zero deps, curl | bash)
+│   ├── quick-configure.sh      # Lite tier hook manager (enable/disable/list)
 │   ├── quick-unsetup.sh         # Lite tier uninstaller
 │   ├── install-complete.sh      # Full installer (all platforms)
 │   ├── install-windows.ps1      # PowerShell installer (Windows)
@@ -332,6 +333,19 @@ curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/m
 
 Then instruct user to restart Claude Code.
 
+**To customize which hooks are active** (no clone needed):
+```bash
+# List hooks
+curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-configure.sh | bash -s -- --list
+
+# Disable/enable individual hooks
+curl -sL ...quick-configure.sh | bash -s -- --disable SubagentStop
+curl -sL ...quick-configure.sh | bash -s -- --enable SubagentStop
+
+# Keep only specific hooks
+curl -sL ...quick-configure.sh | bash -s -- --only Stop Notification
+```
+
 ### Option B: Full Install (Custom Audio / TTS / Advanced Features)
 
 #### Step 1: Detect Environment
@@ -386,6 +400,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.3.1 | 2026-02-17 | Quick Setup customization: new `quick-configure.sh` for enabling/disabling individual hooks without cloning; fix `quick-unsetup.sh` missing PermissionRequest |
 | 4.3.0 | 2026-02-17 | Per-hook notification mode overrides: independently control audio/desktop notifications per hook type via `notification_settings.per_hook` |
 | 4.2.2 | 2026-02-14 | Robust theme switching: remove conflicting `audio_files` config, add hook_runner.py auto-sync from project dir, configure.sh syncs on theme switch |
 | 4.2.0 | 2026-02-13 | Add 4 new hooks (PostToolUseFailure, SubagentStart, TeammateIdle, TaskCompleted), 14 total hooks, 14 unique audio files |

@@ -5,6 +5,23 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.1] - 2026-02-17
+
+### Added
+- **`scripts/quick-configure.sh`**: Lightweight hook manager for Quick Setup (Lite tier) users — enable, disable, or list individual hooks without cloning the repository
+  - `--list` shows which of the 4 Quick Setup hooks are enabled/disabled
+  - `--disable <Hook>` removes a hook from `~/.claude/settings.json`
+  - `--enable <Hook>` re-adds a hook with the correct platform-specific command
+  - `--only <Hook> [Hook...]` keeps only the specified hooks, removes the rest
+  - Works via `curl | bash` (no clone needed), same pattern as `quick-setup.sh`
+  - Case-insensitive hook name matching
+  - Supports Python and Node.js for JSON manipulation
+
+### Fixed
+- **`scripts/quick-unsetup.sh`**: Now removes all 4 installed hooks including `PermissionRequest` (was only removing 3: Stop, Notification, SubagentStop)
+
+---
+
 ## [4.3.0] - 2026-02-17
 
 ### Added

@@ -64,7 +64,7 @@ except (FileNotFoundError, json.JSONDecodeError):
 
 hooks = settings.get('hooks', {})
 removed = []
-for key in ['Stop', 'Notification', 'SubagentStop']:
+for key in ['Stop', 'Notification', 'SubagentStop', 'PermissionRequest']:
     if key in hooks:
         del hooks[key]
         removed.append(key)
@@ -86,7 +86,7 @@ const f = process.argv[1];
 let s = {};
 try { s = JSON.parse(fs.readFileSync(f, 'utf8')); } catch(e) { process.exit(1); }
 const hooks = s.hooks || {};
-['Stop','Notification','SubagentStop'].forEach(k => {
+['Stop','Notification','SubagentStop','PermissionRequest'].forEach(k => {
     if (hooks[k]) { delete hooks[k]; console.log('Removed: ' + k); }
 });
 if (Object.keys(hooks).length === 0) delete s.hooks;
@@ -94,7 +94,7 @@ fs.writeFileSync(f, JSON.stringify(s, null, 2) + '\n');
 " "$settings_file"
     else
         error "No Python or Node found. Cannot safely edit JSON."
-        error "Please manually remove Stop, Notification, and SubagentStop hooks from:"
+        error "Please manually remove Stop, Notification, SubagentStop, and PermissionRequest hooks from:"
         error "  $settings_file"
         exit 1
     fi
