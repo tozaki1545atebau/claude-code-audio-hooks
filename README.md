@@ -791,12 +791,45 @@ Configure in `config/user_preferences.json`:
 | `audio_only` | Yes | No | Classic behavior, backward compatible |
 | `notification_only` | No | Yes | Silent environments, visual-only alerts |
 | `audio_and_notification` | Yes | Yes | Maximum awareness (recommended) |
+| `disabled` | No | No | Suppress both (TTS/logging still works) |
 
 Desktop notifications show context from Claude Code:
 - **Stop**: "Task completed"
 - **Notification**: "Authorization needed: Allow Bash command?"
 - **PreToolUse**: "Running: Bash"
 - **SubagentStop**: "Background task finished (Explore)"
+
+### **Per-Hook Notification Mode** *(v4.3.0)*
+
+Override the global mode for specific hooks. Hooks not listed in `per_hook` fall back to the global `mode`. This is useful when frequent hooks (like `pretooluse`) should only play audio without queuing slow desktop notifications:
+
+```json
+{
+  "notification_settings": {
+    "mode": "audio_and_notification",
+    "show_context": true,
+    "per_hook": {
+      "pretooluse": "audio_only",
+      "posttooluse": "audio_only",
+      "precompact": "disabled"
+    }
+  }
+}
+```
+
+| Mode | Audio | Desktop Popup | Notes |
+|------|-------|---------------|-------|
+| `audio_only` | Yes | No | Fast, no desktop notification delay |
+| `notification_only` | No | Yes | Visual-only, no audio |
+| `audio_and_notification` | Yes | Yes | Both channels |
+| `disabled` | No | No | Suppresses both (TTS/logging still works) |
+
+> **Note:** `"disabled"` is different from `enabled_hooks: false` — the hook still fires for TTS and logging, it just skips audio and desktop notifications.
+
+**CLI shortcut:**
+```bash
+bash scripts/configure.sh --hook-mode pretooluse=audio_only posttooluse=disabled
+```
 
 ### **Text-to-Speech**
 

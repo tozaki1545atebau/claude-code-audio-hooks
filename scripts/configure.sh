@@ -364,6 +364,99 @@ print("OK")
 PYTHON_SCRIPT
 }
 
+# Programmatic per-hook notification mode setting
+cmd_hook_mode() {
+    local assignments=("$@")
+    if [ ${#assignments[@]} -eq 0 ]; then
+        echo -e "${RED}Error: At least one hook=mode assignment required${NC}" >&2
+        echo "Usage: $0 --hook-mode <hook>=<mode> [hook2=mode2 ...]" >&2
+        echo "Valid modes: audio_only, notification_only, audio_and_notification, disabled" >&2
+        echo "Example: $0 --hook-mode pretooluse=audio_only posttooluse=disabled" >&2
+        exit 1
+    fi
+
+    local valid_modes="audio_only notification_only audio_and_notification disabled"
+    local changed=0
+
+    for assignment in "${assignments[@]}"; do
+        if [[ ! "$assignment" =~ ^([a-z_]+)=(.+)$ ]]; then
+            echo -e "${YELLOW}Warning: Invalid format '$assignment', use hook=mode${NC}" >&2
+            continue
+        fi
+
+        local hook_name="${BASH_REMATCH[1]}"
+        local mode="${BASH_REMATCH[2]}"
+
+        # Validate hook name
+        local index=$(get_hook_index "$hook_name")
+        if [ -z "$index" ]; then
+            echo -e "${YELLOW}Warning: Unknown hook '$hook_name', skipping${NC}" >&2
+            continue
+        fi
+
+        # Validate mode
+        local mode_valid=false
+        for vm in $valid_modes; do
+            if [[ "$mode" == "$vm" ]]; then
+                mode_valid=true
+                break
+            fi
+        done
+        if [[ "$mode_valid" != "true" ]]; then
+            echo -e "${YELLOW}Warning: Invalid mode '$mode' for $hook_name, skipping${NC}" >&2
+            echo "  Valid modes: $valid_modes" >&2
+            continue
+        fi
+
+        echo -e "${GREEN}✓${NC} Set $hook_name mode = $mode"
+        ((changed++))
+    done
+
+    if [ $changed -eq 0 ]; then
+        echo -e "${RED}No valid assignments to apply${NC}" >&2
+        exit 1
+    fi
+
+    # Apply all changes via Python
+    python3 << PYTHON_SCRIPT
+import json
+
+config_file = "$CONFIG_FILE"
+assignments = """$@""".split()
+
+try:
+    with open(config_file, 'r') as f:
+        config = json.load(f)
+except:
+    config = {}
+
+notification_settings = config.setdefault("notification_settings", {})
+per_hook = notification_settings.setdefault("per_hook", {})
+
+for assignment in assignments:
+    if '=' in assignment:
+        hook_name, mode = assignment.split('=', 1)
+        per_hook[hook_name] = mode
+
+# Remove _comment keys from per_hook if present (clean save)
+per_hook_clean = {k: v for k, v in per_hook.items() if not k.startswith('_')}
+notification_settings["per_hook"] = per_hook_clean
+
+with open(config_file, 'w') as f:
+    json.dump(config, f, indent=2)
+
+print("OK")
+PYTHON_SCRIPT
+
+    if [ $? -eq 0 ]; then
+        echo -e "\n${GREEN}${BOLD}✓ Per-hook notification modes saved${NC}"
+        echo -e "${YELLOW}Remember to restart Claude Code to apply changes${NC}"
+    else
+        echo -e "${RED}✗${NC} Failed to save per-hook modes" >&2
+        exit 1
+    fi
+}
+
 # Programmatic theme switching
 cmd_theme() {
     local theme=$1
@@ -514,6 +607,12 @@ ${CYAN}PROGRAMMATIC MODE${NC} (with arguments):
     custom  - Modern UI sound effects, no voice (audio/custom/)
     Example: $0 --theme custom
 
+  ${BOLD}--hook-mode <hook>=<mode> [hook2=mode2 ...]${NC}
+    Set per-hook notification mode overrides
+    Valid modes: audio_only, notification_only, audio_and_notification, disabled
+    Hooks not listed fall back to the global notification_settings.mode
+    Example: $0 --hook-mode pretooluse=audio_only posttooluse=disabled
+
   ${BOLD}--reset${NC}
     Reset to recommended defaults
     (Enables: notification, stop, subagent_stop, permission_request; Disables: all others)
@@ -543,6 +642,9 @@ ${CYAN}EXAMPLES${NC}:
 
   # Mixed operations
   $0 --enable notification --disable pretooluse --set stop=true
+
+  # Set per-hook notification modes (audio only for noisy hooks)
+  $0 --hook-mode pretooluse=audio_only posttooluse=disabled
 
   # Check if notification hook is enabled
   $0 --get notification
@@ -813,6 +915,16 @@ process_arguments() {
             --theme)
                 shift
                 cmd_theme "$1"
+                exit 0
+                ;;
+            --hook-mode)
+                shift
+                local hook_modes=()
+                while [ $# -gt 0 ] && [[ ! "$1" =~ ^-- ]]; do
+                    hook_modes+=("$1")
+                    shift
+                done
+                cmd_hook_mode "${hook_modes[@]}"
                 exit 0
                 ;;
             --reset)

@@ -29,7 +29,7 @@ from typing import Optional, Dict, Any, List
 
 # Version used for auto-sync: when the installed copy in ~/.claude/hooks/
 # detects a newer version in the project directory, it self-updates.
-HOOK_RUNNER_VERSION = "4.2.2"
+HOOK_RUNNER_VERSION = "4.3.0"
 
 # =============================================================================
 # DEBUG LOGGING SYSTEM
@@ -1028,11 +1028,20 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     # Load config once for notification/TTS settings
     config = load_config()
 
-    # Determine notification mode (backward compatible: default to audio_only)
+    # Determine notification mode with per-hook override support
     notification_settings = config.get("notification_settings", {})
-    mode = notification_settings.get("mode", "audio_only")
+    global_mode = notification_settings.get("mode", "audio_only")
+    per_hook_modes = {k: v for k, v in notification_settings.get("per_hook", {}).items() if not k.startswith("_")}
+    mode = per_hook_modes.get(hook_type, global_mode)
 
-    # Play audio (unless mode is notification_only)
+    # Validate mode (fall back to global if invalid)
+    valid_modes = ("audio_only", "notification_only", "audio_and_notification", "disabled")
+    if mode not in valid_modes:
+        log_debug(f"Invalid per_hook mode '{mode}' for {hook_type}, falling back to '{global_mode}'")
+        mode = global_mode
+    log_debug(f"Notification mode for {hook_type}: {mode} (global={global_mode})")
+
+    # Play audio (unless mode is notification_only or disabled)
     if mode in ("audio_only", "audio_and_notification"):
         audio_file = get_audio_file(hook_type)
         if not audio_file:
@@ -1049,14 +1058,18 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
                 log_error(f"Failed to play audio: {audio_file}")
     elif mode == "notification_only":
         log_trigger(hook_type, "AUDIO_SKIPPED", f"mode={mode}")
+    elif mode == "disabled":
+        log_trigger(hook_type, "AUDIO_SKIPPED", "mode=disabled")
 
-    # Desktop notification
+    # Desktop notification (unless mode is audio_only or disabled)
     if mode in ("notification_only", "audio_and_notification"):
         context = get_notification_context(hook_type, stdin_data or {})
         urgency = "critical" if hook_type in ("notification", "permission_request", "posttoolusefailure") else "normal"
         notif_sent = send_desktop_notification("Claude Code", context, urgency)
         if notif_sent:
             log_debug(f"Desktop notification sent for {hook_type}: {context}")
+    elif mode == "disabled":
+        log_trigger(hook_type, "NOTIFICATION_SKIPPED", "mode=disabled")
 
     # TTS (text-to-speech)
     tts_settings = config.get("tts_settings", {})

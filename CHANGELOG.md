@@ -5,6 +5,26 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.3.0] - 2026-02-17
+
+### Added
+- **Per-hook notification mode overrides**: New `notification_settings.per_hook` config allows independently controlling audio and desktop notifications per hook type (e.g., `"pretooluse": "audio_only"` to skip desktop notifications for frequent hooks)
+- **`disabled` notification mode**: Suppresses both audio and desktop notifications while still allowing TTS and logging — different from `enabled_hooks: false` which skips everything
+- **`--hook-mode` CLI flag**: `bash scripts/configure.sh --hook-mode pretooluse=audio_only posttooluse=disabled` for quick per-hook mode configuration
+- Per-hook mode validation with automatic fallback to global mode on invalid values
+
+### Changed
+- `hook_runner.py` notification mode resolution now checks `per_hook` overrides before falling back to global `notification_settings.mode`
+- Debug logging now shows both per-hook and global mode for each hook trigger
+- Updated `config/default_preferences.json` and `config/user_preferences.json` with `per_hook` field
+- Updated CLAUDE.md, README.md with per-hook notification mode documentation
+
+### Upgrade
+
+No reinstall needed — existing installations self-update automatically on the next hook trigger after `git pull`. The `per_hook` field is fully backward compatible: if absent, all hooks use the global mode as before.
+
+---
+
 ## [4.2.2] - 2026-02-14
 
 ### Fixed
