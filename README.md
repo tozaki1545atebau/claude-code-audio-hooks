@@ -615,8 +615,13 @@ Already using Claude Code? Just tell it what you want in plain language:
 | **Enable all hooks** | *"Enable all 14 audio hooks"* |
 | **Reset to defaults** | *"Reset audio hooks to recommended defaults"* |
 | **Check current config** | *"Show me which audio hooks are enabled"* |
+| **Audio only, no popups** | *"Turn off all desktop notification popups, keep audio only"* |
+| **Popups only, no audio** | *"Switch to desktop notifications only, disable all audio"* |
+| **Audio + popups for critical hooks** | *"Set global mode to audio_only, but enable audio + desktop popup for stop, notification, and permission_request hooks"* |
+| **Silence noisy hooks** | *"Set pretooluse and posttooluse to disabled mode so they don't play audio or show popups"* |
+| **Mixed per-hook setup** | *"I want audio for all hooks, but also desktop popups only for task completion and authorization requests"* |
 
-Claude Code reads the project's `CLAUDE.md` and knows exactly which files to edit and which commands to run.
+Claude Code reads the project's `CLAUDE.md` and knows exactly which files to edit and which commands to run. **This is the fastest way to configure notification modes** — just describe what you want in plain language and Claude Code will update `config/user_preferences.json` for you.
 
 ---
 
@@ -801,35 +806,140 @@ Desktop notifications show context from Claude Code:
 
 ### **Per-Hook Notification Mode** *(v4.3.0)*
 
-Override the global mode for specific hooks. Hooks not listed in `per_hook` fall back to the global `mode`. This is useful when frequent hooks (like `pretooluse`) should only play audio without queuing slow desktop notifications:
+Override the global mode for individual hooks. Hooks **not listed** in `per_hook` fall back to the global `mode`. This gives you fine-grained control: audio-only for noisy hooks, desktop popups for critical ones, or silence for hooks you only want logged.
 
+#### How It Works
+
+```
+notification_settings.mode          ← global default for ALL hooks
+notification_settings.per_hook.*    ← overrides for SPECIFIC hooks
+```
+
+Each hook resolves its mode like this:
+1. Check `per_hook[hook_name]` — if present, use that mode
+2. Otherwise, fall back to global `mode`
+
+#### Available Modes
+
+| Mode | Audio | Desktop Popup | Notes |
+|------|-------|---------------|-------|
+| `audio_only` | ✅ | ❌ | Fast, instant feedback |
+| `notification_only` | ❌ | ✅ | Visual-only, no sound |
+| `audio_and_notification` | ✅ | ✅ | Both channels, maximum awareness |
+| `disabled` | ❌ | ❌ | Silent — TTS and logging still work |
+
+> **`disabled` vs `enabled_hooks: false`** — `disabled` mode still fires the hook (TTS speaks, logs are written), it just skips audio and desktop notifications. Setting `enabled_hooks.xxx: false` skips the hook entirely.
+
+#### Common Configurations
+
+**🔇 Audio only, no desktop popups (clean & fast):**
 ```json
 {
   "notification_settings": {
-    "mode": "audio_and_notification",
-    "show_context": true,
+    "mode": "audio_only",
+    "per_hook": {}
+  }
+}
+```
+
+**🖥️ Desktop popups only, no audio (silent environment):**
+```json
+{
+  "notification_settings": {
+    "mode": "notification_only",
+    "per_hook": {}
+  }
+}
+```
+
+**🎯 Audio for everything + desktop popups only for critical hooks (recommended):**
+
+Best for long-running tasks — you hear every event, but only get a desktop popup when Claude actually needs you:
+```json
+{
+  "notification_settings": {
+    "mode": "audio_only",
     "per_hook": {
-      "pretooluse": "audio_only",
-      "posttooluse": "audio_only",
-      "precompact": "disabled"
+      "stop": "audio_and_notification",
+      "notification": "audio_and_notification",
+      "permission_request": "audio_and_notification"
     }
   }
 }
 ```
 
-| Mode | Audio | Desktop Popup | Notes |
-|------|-------|---------------|-------|
-| `audio_only` | Yes | No | Fast, no desktop notification delay |
-| `notification_only` | No | Yes | Visual-only, no audio |
-| `audio_and_notification` | Yes | Yes | Both channels |
-| `disabled` | No | No | Suppresses both (TTS/logging still works) |
+**🔕 Silence noisy hooks, keep the rest:**
 
-> **Note:** `"disabled"` is different from `enabled_hooks: false` — the hook still fires for TTS and logging, it just skips audio and desktop notifications.
-
-**CLI shortcut:**
-```bash
-bash scripts/configure.sh --hook-mode pretooluse=audio_only posttooluse=disabled
+PreToolUse/PostToolUse fire on every single tool call. Disable their audio and popups while keeping all other hooks at full volume:
+```json
+{
+  "notification_settings": {
+    "mode": "audio_and_notification",
+    "per_hook": {
+      "pretooluse": "disabled",
+      "posttooluse": "disabled"
+    }
+  }
+}
 ```
+
+**🎧 Audio for frequent hooks, both channels for critical hooks:**
+
+Hear a quick chime for routine events, but get audio + popup for things that need attention:
+```json
+{
+  "notification_settings": {
+    "mode": "audio_only",
+    "per_hook": {
+      "stop": "audio_and_notification",
+      "notification": "audio_and_notification",
+      "permission_request": "audio_and_notification",
+      "subagent_stop": "audio_and_notification",
+      "posttoolusefailure": "audio_and_notification"
+    }
+  }
+}
+```
+
+**👀 Desktop popup for failures only, audio for everything else:**
+```json
+{
+  "notification_settings": {
+    "mode": "audio_only",
+    "per_hook": {
+      "posttoolusefailure": "audio_and_notification"
+    }
+  }
+}
+```
+
+#### CLI Shortcut
+
+```bash
+# Set per-hook modes from command line
+bash scripts/configure.sh --hook-mode pretooluse=audio_only posttooluse=disabled
+
+# Multiple hooks at once
+bash scripts/configure.sh --hook-mode stop=audio_and_notification notification=audio_and_notification permission_request=audio_and_notification
+```
+
+#### 🤖 Let Claude Code Configure It For You
+
+The easiest way to set up per-hook modes is to **describe what you want in natural language** and let Claude Code do the editing. Claude Code reads this project's `CLAUDE.md` which contains the full config schema.
+
+**Examples you can say to Claude Code:**
+
+| Scenario | What to say |
+|----------|-------------|
+| Quiet focus mode | *"Turn off all desktop popups, I only want audio"* |
+| Critical alerts only | *"Only show desktop popups for task completion and authorization, audio for everything else"* |
+| Silent noisy hooks | *"Disable audio and popups for pretooluse and posttooluse, they're too noisy"* |
+| Popup-only setup | *"I'm in a meeting, switch everything to desktop notifications only, no audio"* |
+| Failure awareness | *"I want a desktop popup when a tool fails, but keep audio-only for all other hooks"* |
+| Full awareness | *"Enable both audio and desktop popups for all hooks"* |
+| Back to basics | *"Reset notification mode to audio_only for all hooks, clear all per-hook overrides"* |
+
+Claude Code will directly edit `config/user_preferences.json` — no manual JSON editing needed.
 
 ### **Text-to-Speech**
 
@@ -1052,6 +1162,49 @@ Or via CLI:
 ```bash
 bash scripts/configure.sh --theme custom
 bash scripts/configure.sh --enable notification stop pretooluse posttooluse posttoolusefailure userpromptsubmit subagent_stop subagent_start precompact session_start session_end permission_request teammate_idle task_completed
+```
+
+#### **Scenario 4: Audio + Selective Desktop Popups**
+Chime audio for everything, but desktop popups only when Claude needs you:
+
+```
+Tell Claude Code: "Switch to chime audio, enable all hooks, set global mode to audio_only, and add desktop popups for stop, notification, and permission_request hooks only"
+```
+
+Or manually:
+```json
+{
+  "audio_theme": "custom",
+  "notification_settings": {
+    "mode": "audio_only",
+    "per_hook": {
+      "stop": "audio_and_notification",
+      "notification": "audio_and_notification",
+      "permission_request": "audio_and_notification"
+    }
+  }
+}
+```
+
+#### **Scenario 5: Silent Coding, Popups Only**
+You're on a call or listening to music — no audio, just desktop popups for critical events:
+
+```
+Tell Claude Code: "Disable all audio, only show desktop notification popups for stop, notification, and permission_request hooks, disable everything else"
+```
+
+Or manually:
+```json
+{
+  "notification_settings": {
+    "mode": "disabled",
+    "per_hook": {
+      "stop": "notification_only",
+      "notification": "notification_only",
+      "permission_request": "notification_only"
+    }
+  }
+}
 ```
 
 ---
