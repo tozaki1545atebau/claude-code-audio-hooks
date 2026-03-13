@@ -35,7 +35,7 @@ https://github.com/user-attachments/assets/107ff48b-9d4f-40fd-9368-e36741b262ed
 </details>
 
 <details open>
-<summary><kbd>📷 Effects after version v4.0.0</kbd></summary>
+<summary><kbd>📷 Effects after version v4.0.0 — Voice Notifications (Default Theme)</kbd></summary>
 
 ### Ubuntu
 
@@ -46,6 +46,23 @@ https://github.com/user-attachments/assets/2e2f1046-e690-409c-ba05-e621ded295dd
 https://github.com/user-attachments/assets/a1b11528-a248-415f-93d9-7859261d9abd
 
 https://github.com/user-attachments/assets/3fd4c3aa-8204-4a06-be1b-d49dc9bb7cf9
+
+</details>
+
+<details open>
+<summary><kbd>🔔 Non-Voice Chimes (Custom Theme)</kbd></summary>
+
+### Full Demo
+
+https://github.com/user-attachments/assets/25be4d51-8385-4f95-aaac-3cc782b603bf
+
+### SessionStart & SessionEnd
+
+https://github.com/user-attachments/assets/9e35f43c-e22b-44e3-8251-35057162f192
+
+### PermissionRequest, TaskCompleted & SubagentStop
+
+https://github.com/user-attachments/assets/0a855974-143c-424e-9c22-af2db2728d2f
 
 </details>
 
