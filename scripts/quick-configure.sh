@@ -40,6 +40,14 @@ error()   { printf "${RED}[ERROR]${NC} %s\n" "$1"; }
 # All Quick Setup hooks
 ALL_HOOKS=("Stop" "Notification" "SubagentStop" "PermissionRequest")
 
+# Cross-platform temp/queue directory (must match hook_runner.py / hook_config.sh)
+if [[ "$OSTYPE" == "msys" ]] || [[ "$OSTYPE" == "mingw"* ]] || [[ "$OSTYPE" == "cygwin" ]]; then
+    QUEUE_DIR="${TEMP:-${TMP:-/tmp}}/claude_audio_hooks_queue"
+else
+    QUEUE_DIR="/tmp/claude_audio_hooks_queue"
+fi
+SNOOZE_FILE="$QUEUE_DIR/snooze_until"
+
 # =============================================================================
 # PLATFORM DETECTION (same as quick-setup.sh)
 # =============================================================================
@@ -474,6 +482,9 @@ show_usage() {
     printf "  quick-configure.sh --enable <Hook> [Hook...]       Enable hooks\n"
     printf "  quick-configure.sh --disable <Hook> [Hook...]      Disable hooks\n"
     printf "  quick-configure.sh --only <Hook> [Hook...]         Keep only these hooks\n"
+    printf "  quick-configure.sh --snooze [DURATION]             Temporarily mute all hooks (default: 30m)\n"
+    printf "  quick-configure.sh --resume                        Cancel snooze, resume hooks\n"
+    printf "  quick-configure.sh --snooze-status                 Show snooze status\n"
     printf "  quick-configure.sh --help                          Show this help\n"
     printf "\n${BOLD}Available hooks:${NC}\n"
     printf "  Stop              - Sound + notification when tasks complete\n"
@@ -487,6 +498,10 @@ show_usage() {
     printf "  quick-configure.sh --only Stop Notification\n\n"
     printf "  # Re-enable everything:\n"
     printf "  quick-configure.sh --enable Stop Notification SubagentStop PermissionRequest\n\n"
+    printf "  # Snooze all hooks for 1 hour:\n"
+    printf "  quick-configure.sh --snooze 1h\n\n"
+    printf "  # Check snooze status:\n"
+    printf "  quick-configure.sh --snooze-status\n\n"
     printf "${BOLD}Remote usage (no clone needed):${NC}\n"
     printf "  curl -sL https://raw.githubusercontent.com/ChanMeng666/claude-code-audio-hooks/master/scripts/quick-configure.sh | bash -s -- --list\n"
     printf "\n"
@@ -547,6 +562,22 @@ main() {
                     hook_args+=("$1")
                     shift
                 done
+                ;;
+            --snooze|-s)
+                action="snooze"
+                shift
+                if [ $# -gt 0 ] && [[ ! "$1" =~ ^-- ]]; then
+                    hook_args+=("$1")
+                    shift
+                fi
+                ;;
+            --resume|--unsnooze)
+                action="resume"
+                shift
+                ;;
+            --snooze-status)
+                action="snooze-status"
+                shift
                 ;;
             --help|-h)
                 show_usage
@@ -654,6 +685,81 @@ main() {
             fi
             add_hooks "$settings_file" "$json_tool" "$PLATFORM" "${keep[@]}"
             printf "\n${BOLD}Restart Claude Code for changes to take effect.${NC}\n"
+            ;;
+
+        snooze)
+            # Inline snooze (self-contained, no external script needed)
+            local duration_str="${hook_args[0]:-30m}"
+            local duration_seconds=0
+
+            if [[ "$duration_str" =~ ^([0-9]+)h$ ]]; then
+                duration_seconds=$(( ${BASH_REMATCH[1]} * 3600 ))
+            elif [[ "$duration_str" =~ ^([0-9]+)m$ ]]; then
+                duration_seconds=$(( ${BASH_REMATCH[1]} * 60 ))
+            elif [[ "$duration_str" =~ ^([0-9]+)s$ ]]; then
+                duration_seconds=$(( ${BASH_REMATCH[1]} ))
+            elif [[ "$duration_str" =~ ^([0-9]+)$ ]]; then
+                duration_seconds=$(( ${BASH_REMATCH[1]} * 60 ))
+            else
+                error "Invalid duration format '$duration_str'. Examples: 30m, 1h, 2h, 90m"
+                exit 1
+            fi
+
+            if [ "$duration_seconds" -le 0 ]; then
+                error "Duration must be greater than 0"
+                exit 1
+            fi
+
+            if [ "$duration_seconds" -gt 86400 ]; then
+                warn "Snoozing for more than 24 hours. Consider disabling hooks instead."
+            fi
+
+            mkdir -p "$QUEUE_DIR" 2>/dev/null
+            local snooze_until=$(( $(date +%s) + duration_seconds ))
+            echo "$snooze_until" > "$SNOOZE_FILE"
+
+            success "Snoozed! All audio hooks muted for $duration_str"
+            printf "Hooks will auto-resume at %s\n" "$(date -d "@$snooze_until" 2>/dev/null || date -r "$snooze_until" 2>/dev/null || echo "epoch $snooze_until")"
+            printf "\nTo cancel: quick-configure.sh --resume\n"
+            ;;
+
+        resume)
+            if [ -f "$SNOOZE_FILE" ]; then
+                rm -f "$SNOOZE_FILE"
+                success "Resumed! Audio hooks are active again."
+            else
+                info "Not snoozed. Audio hooks are already active."
+            fi
+            ;;
+
+        snooze-status)
+            if [ ! -f "$SNOOZE_FILE" ]; then
+                info "Not snoozed — audio hooks are active."
+            else
+                local snooze_until
+                snooze_until="$(cat "$SNOOZE_FILE" 2>/dev/null)" || {
+                    info "Not snoozed — audio hooks are active."
+                    exit 0
+                }
+                snooze_until="${snooze_until%%.*}"
+                local current_time
+                current_time="$(date +%s)"
+                if [ "$current_time" -lt "$snooze_until" ] 2>/dev/null; then
+                    local remaining=$(( snooze_until - current_time ))
+                    local hours=$(( remaining / 3600 ))
+                    local minutes=$(( (remaining % 3600) / 60 ))
+                    local friendly=""
+                    if [ "$hours" -gt 0 ]; then friendly="${hours}h "; fi
+                    if [ "$minutes" -gt 0 ]; then friendly="${friendly}${minutes}m"; fi
+                    if [ -z "$friendly" ]; then friendly="${remaining}s"; fi
+                    warn "Snoozed — ~${friendly} remaining"
+                    printf "Resumes at %s\n" "$(date -d "@$snooze_until" 2>/dev/null || date -r "$snooze_until" 2>/dev/null || echo "epoch $snooze_until")"
+                    printf "\nTo cancel: quick-configure.sh --resume\n"
+                else
+                    info "Snooze expired — audio hooks are active."
+                    rm -f "$SNOOZE_FILE" 2>/dev/null
+                fi
+            fi
             ;;
 
         *)

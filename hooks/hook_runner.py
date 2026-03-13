@@ -29,7 +29,7 @@ from typing import Optional, Dict, Any, List
 
 # Version used for auto-sync: when the installed copy in ~/.claude/hooks/
 # detects a newer version in the project directory, it self-updates.
-HOOK_RUNNER_VERSION = "4.3.0"
+HOOK_RUNNER_VERSION = "4.4.0"
 
 # =============================================================================
 # DEBUG LOGGING SYSTEM
@@ -381,6 +381,25 @@ def is_hook_enabled(hook_type: str) -> bool:
     result = hook_type in default_enabled
     log_debug(f"Hook {hook_type} using default: {result}")
     return result
+
+
+def is_snoozed() -> bool:
+    """Check if hooks are temporarily snoozed via marker file."""
+    snooze_file = QUEUE_DIR / "snooze_until"
+    if not snooze_file.exists():
+        return False
+    try:
+        snooze_until = float(snooze_file.read_text(encoding="utf-8").strip())
+        if time.time() < snooze_until:
+            remaining = snooze_until - time.time()
+            log_debug(f"Snoozed: {remaining:.0f}s remaining")
+            return True
+        else:
+            log_debug("Snooze expired")
+            return False
+    except (ValueError, OSError) as e:
+        log_debug(f"Error reading snooze file: {e}")
+        return False
 
 
 CUSTOM_AUDIO_FILES = {
@@ -1018,6 +1037,11 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     # Check if hook is enabled
     if not is_hook_enabled(hook_type):
         log_trigger(hook_type, "DISABLED")
+        return 0
+
+    # Check if snoozed
+    if is_snoozed():
+        log_trigger(hook_type, "SNOOZED")
         return 0
 
     # Check debounce

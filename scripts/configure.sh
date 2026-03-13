@@ -617,6 +617,16 @@ ${CYAN}PROGRAMMATIC MODE${NC} (with arguments):
     Reset to recommended defaults
     (Enables: notification, stop, subagent_stop, permission_request; Disables: all others)
 
+  ${BOLD}--snooze [DURATION]${NC}
+    Temporarily mute all audio hooks (default: 30m)
+    Examples: --snooze 30m, --snooze 1h, --snooze 2h
+
+  ${BOLD}--resume${NC}
+    Cancel snooze early, resume all hooks
+
+  ${BOLD}--snooze-status${NC}
+    Show current snooze status
+
   ${BOLD}--apply${NC}
     Save configuration without prompting
     (Auto-applied after --enable, --disable, --set, --reset)
@@ -925,6 +935,19 @@ process_arguments() {
                     shift
                 done
                 cmd_hook_mode "${hook_modes[@]}"
+                exit 0
+                ;;
+            --snooze)
+                shift
+                bash "$PROJECT_DIR/scripts/snooze.sh" "${1:-30m}"
+                exit 0
+                ;;
+            --resume|--unsnooze)
+                bash "$PROJECT_DIR/scripts/snooze.sh" resume
+                exit 0
+                ;;
+            --snooze-status)
+                bash "$PROJECT_DIR/scripts/snooze.sh" status
                 exit 0
                 ;;
             --reset)

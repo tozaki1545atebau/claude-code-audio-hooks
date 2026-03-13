@@ -216,6 +216,16 @@ EOF
     [ "$enabled" = "true" ]
 }
 
+# Check if hooks are temporarily snoozed via marker file
+is_snoozed() {
+    local snooze_file="$QUEUE_DIR/snooze_until"
+    [ -f "$snooze_file" ] || return 1
+    local snooze_until current_time
+    snooze_until=$(cat "$snooze_file" 2>/dev/null) || return 1
+    current_time=$(date +%s)
+    [ "$current_time" -lt "${snooze_until%%.*}" ] 2>/dev/null
+}
+
 # Get audio file path for a hook type
 get_audio_file() {
     local hook_type="$1"
@@ -549,6 +559,12 @@ get_and_play_audio() {
         exit 0  # Hook disabled, exit silently
     fi
 
+    # Check if snoozed
+    if is_snoozed; then
+        log_debug "Hook $hook_type snoozed, skipping"
+        exit 0
+    fi
+
     # Check debounce (prevent rapid-fire notifications)
     if should_debounce "$hook_type"; then
         exit 0  # Debounced, exit silently
@@ -625,6 +641,7 @@ cleanup_hooks() {
 # =============================================================================
 
 # Export functions for use in hook scripts
+export -f is_snoozed
 export -f is_hook_enabled
 export -f get_audio_file
 export -f play_audio_internal

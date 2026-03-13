@@ -5,6 +5,23 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.4.0] - 2026-03-13
+
+### Added
+- **Snooze / Temporary Mute** (closes #7): Temporarily silence all audio hooks for a specified duration with automatic resumption
+  - New `scripts/snooze.sh` standalone CLI: `bash scripts/snooze.sh 1h` to snooze, `status` to check, `off` to resume
+  - Marker-file based design — no daemon or cleanup needed; hooks self-expire
+  - Accepts flexible duration formats: `30m`, `1h`, `2h`, `90m`, bare numbers (minutes), `30s`
+  - `--snooze`, `--resume`, `--snooze-status` flags added to `scripts/configure.sh`
+  - `--snooze`, `--resume`, `--snooze-status` flags added to `scripts/quick-configure.sh` (inline, works via `curl | bash`)
+  - Snooze check integrated into both `hooks/hook_runner.py` (Python) and `hooks/shared/hook_config.sh` (Bash)
+  - Debug logging: snoozed hooks log "SNOOZED" with remaining time
+
+### Changed
+- `hook_runner.py` version bumped to 4.4.0
+
+---
+
 ## [4.3.1] - 2026-02-17
 
 ### Added

@@ -633,6 +633,9 @@ Already using Claude Code? Just tell it what you want in plain language:
 | **Audio only, no popups** | *"Turn off all desktop notification popups, keep audio only"* |
 | **Popups only, no audio** | *"Switch to desktop notifications only, disable all audio"* |
 | **Audio + popups for critical hooks** | *"Set global mode to audio_only, but enable audio + desktop popup for stop, notification, and permission_request hooks"* |
+| **Snooze for a meeting** | *"Snooze all audio hooks for 1 hour"* |
+| **Check snooze status** | *"Are my audio hooks snoozed right now?"* |
+| **Resume after snooze** | *"Cancel the snooze and resume audio hooks"* |
 | **Silence noisy hooks** | *"Set pretooluse and posttooluse to disabled mode so they don't play audio or show popups"* |
 | **Mixed per-hook setup** | *"I want audio for all hooks, but also desktop popups only for task completion and authorization requests"* |
 
@@ -748,6 +751,38 @@ bash scripts/configure.sh --help
 - `task_completed` - Agent Teams task completed
 
 **Note:** All programmatic commands automatically save changes. Remember to restart Claude Code to apply them!
+
+---
+
+#### **Snooze / Temporary Mute**
+
+Need silence during a meeting or focus session? Snooze all hooks temporarily — they auto-resume when the timer expires.
+
+**Standalone script:**
+```bash
+bash scripts/snooze.sh              # Snooze 30 minutes (default)
+bash scripts/snooze.sh 1h           # Snooze 1 hour
+bash scripts/snooze.sh 2h           # Snooze 2 hours
+bash scripts/snooze.sh 90m          # Snooze 90 minutes
+bash scripts/snooze.sh status       # Check remaining time
+bash scripts/snooze.sh off          # Resume immediately
+```
+
+**Via configure.sh:**
+```bash
+bash scripts/configure.sh --snooze 1h
+bash scripts/configure.sh --snooze-status
+bash scripts/configure.sh --resume
+```
+
+**Via quick-configure.sh (Lite tier, no clone needed):**
+```bash
+curl -sL ...quick-configure.sh | bash -s -- --snooze 1h
+curl -sL ...quick-configure.sh | bash -s -- --snooze-status
+curl -sL ...quick-configure.sh | bash -s -- --resume
+```
+
+**How it works:** A timestamp marker file is written to the temp directory. All hook runners check this file before playing audio. When the timestamp is in the past, hooks automatically resume — no cleanup daemon needed.
 
 ---
 

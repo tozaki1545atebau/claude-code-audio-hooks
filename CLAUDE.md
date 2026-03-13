@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.3.1 | **Last Updated:** 2026-02-17
+> **Version:** 4.4.0 | **Last Updated:** 2026-03-13
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -39,6 +39,16 @@ Gives: desktop notifications + system sounds for Stop, Notification, SubagentSto
 | **Linux** | `bash scripts/install-complete.sh` |
 
 Gives: custom MP3 audio + desktop notifications + context-aware alerts + TTS (optional).
+
+### Snooze / Temporary Mute
+```bash
+bash scripts/snooze.sh              # Snooze 30m (default)
+bash scripts/snooze.sh 1h           # Snooze 1 hour
+bash scripts/snooze.sh status       # Show remaining time
+bash scripts/snooze.sh off          # Resume immediately
+bash scripts/configure.sh --snooze 1h   # Via configure.sh
+bash scripts/configure.sh --resume      # Cancel snooze
+```
 
 ## Platform Detection Decision Tree
 
@@ -106,12 +116,13 @@ claude-code-audio-hooks/
 │
 ├── scripts/
 │   ├── quick-setup.sh           # Lite tier installer (zero deps, curl | bash)
-│   ├── quick-configure.sh      # Lite tier hook manager (enable/disable/list)
+│   ├── quick-configure.sh      # Lite tier hook manager (enable/disable/list/snooze)
 │   ├── quick-unsetup.sh         # Lite tier uninstaller
 │   ├── install-complete.sh      # Full installer (all platforms)
 │   ├── install-windows.ps1      # PowerShell installer (Windows)
 │   ├── uninstall.sh             # Uninstaller
 │   ├── configure.sh             # Configuration utility
+│   ├── snooze.sh                # Snooze / temporary mute tool
 │   ├── test-audio.sh            # Audio testing tool
 │   └── diagnose.py              # Diagnostic tool
 │
@@ -400,6 +411,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.4.0 | 2026-03-13 | Snooze / temporary mute: `snooze.sh` CLI, marker-file based, auto-resume; `--snooze`/`--resume` in configure.sh and quick-configure.sh (closes #7) |
 | 4.3.1 | 2026-02-17 | Quick Setup customization: new `quick-configure.sh` for enabling/disabling individual hooks without cloning; fix `quick-unsetup.sh` missing PermissionRequest |
 | 4.3.0 | 2026-02-17 | Per-hook notification mode overrides: independently control audio/desktop notifications per hook type via `notification_settings.per_hook` |
 | 4.2.2 | 2026-02-14 | Robust theme switching: remove conflicting `audio_files` config, add hook_runner.py auto-sync from project dir, configure.sh syncs on theme switch |
