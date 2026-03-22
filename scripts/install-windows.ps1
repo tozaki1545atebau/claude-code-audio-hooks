@@ -351,6 +351,13 @@ function Step-ConfigureSettings {
     }
 
     $hooksWithMatcher = @('PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart', 'SubagentStop', 'Notification', 'ConfigChange', 'InstructionsLoaded', 'PreCompact', 'PostCompact', 'SessionStart', 'SessionEnd', 'StopFailure', 'Elicitation', 'ElicitationResult')
+
+    # Smart matchers: filter high-noise hooks to only fire for relevant tools
+    $smartMatchers = @{
+        'PreToolUse' = 'Bash'
+        'PostToolUseFailure' = 'Bash|Write|Edit'
+    }
+
     $registered = 0
 
     foreach ($hookName in $hookTypes.Keys) {
@@ -360,11 +367,12 @@ function Step-ConfigureSettings {
         $command = "py `"$hookRunnerPath`" $hookType || true"
 
         if ($hooksWithMatcher -contains $hookName) {
+            $matcherValue = if ($smartMatchers.ContainsKey($hookName)) { $smartMatchers[$hookName] } else { '' }
             $hookConfig = @(
                 @{
-                    matcher = ''
+                    matcher = $matcherValue
                     hooks = @(
-                        @{ type = 'command'; command = $command; timeout = 10 }
+                        @{ type = 'command'; command = $command; timeout = 10; async = $true }
                     )
                 }
             )
@@ -372,7 +380,7 @@ function Step-ConfigureSettings {
             $hookConfig = @(
                 @{
                     hooks = @(
-                        @{ type = 'command'; command = $command; timeout = 10 }
+                        @{ type = 'command'; command = $command; timeout = 10; async = $true }
                     )
                 }
             )

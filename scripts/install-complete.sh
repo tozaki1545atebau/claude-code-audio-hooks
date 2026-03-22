@@ -494,6 +494,13 @@ try:
     }
 
     hooks_with_matcher = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart', 'SubagentStop', 'Notification', 'ConfigChange', 'InstructionsLoaded', 'PreCompact', 'PostCompact', 'SessionStart', 'SessionEnd', 'StopFailure', 'Elicitation', 'ElicitationResult']
+
+    # Smart matchers: filter high-noise hooks to only fire for relevant tools
+    smart_matchers = {
+        'PreToolUse': 'Bash',
+        'PostToolUseFailure': 'Bash|Write|Edit',
+    }
+
     registered = 0
 
     if is_windows:
@@ -508,14 +515,14 @@ try:
             command = f'py "{hook_runner}" {hook_type} || true'
 
             entry = {
-                'hooks': [{'type': 'command', 'command': command, 'timeout': 10}]
+                'hooks': [{'type': 'command', 'command': command, 'timeout': 10, 'async': True}]
             }
             if hook_name in hooks_with_matcher:
-                entry['matcher'] = ''
+                entry['matcher'] = smart_matchers.get(hook_name, '')
             settings['hooks'][hook_name] = [entry]
             registered += 1
 
-        env_note = "(Windows - Python hooks)"
+        env_note = "(Windows - Python hooks, async)"
     else:
         # Unix: Use absolute path and defensive wrapping so a missing
         # hook_runner.py returns success (0) instead of blocking the user
@@ -527,14 +534,14 @@ try:
                 continue
             command = f'test -f {hook_runner} && {python_cmd} {hook_runner} {hook_type} || true'
             entry = {
-                'hooks': [{'type': 'command', 'command': command, 'timeout': 10}]
+                'hooks': [{'type': 'command', 'command': command, 'timeout': 10, 'async': True}]
             }
             if hook_name in hooks_with_matcher:
-                entry['matcher'] = ''
+                entry['matcher'] = smart_matchers.get(hook_name, '')
             settings['hooks'][hook_name] = [entry]
             registered += 1
 
-        env_note = "(Unix - Python hooks)"
+        env_note = "(Unix - Python hooks, async)"
 
     # Save settings
     with open(settings_file, 'w', encoding='utf-8') as f:

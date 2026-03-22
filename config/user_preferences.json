@@ -91,12 +91,27 @@
     "_comment": "Desktop notification mode: audio_only, notification_only, audio_and_notification, disabled",
     "mode": "audio_only",
     "show_context": true,
+    "_comment_detail": "Notification detail: 'minimal' (hook name only), 'standard' (tool + brief context), 'verbose' (full command text)",
+    "detail_level": "standard",
     "_comment_per_hook": "Override the global mode for specific hooks. Omit a hook to use the global mode.",
     "per_hook": {
       "stop": "audio_and_notification",
       "notification": "audio_and_notification",
       "permission_request": "audio_and_notification"
     }
+  },
+
+  "filters": {
+    "_comment": "Per-hook regex filters on stdin JSON fields. Suffix '_exclude' inverts. Example: posttoolusefailure: {\"tool_name\": \"Bash|Write\"}"
+  },
+
+  "webhook_settings": {
+    "_comment": "Send hook events to external services. Formats: slack, discord, teams, ntfy, raw",
+    "enabled": false,
+    "url": "",
+    "format": "raw",
+    "hook_types": ["stop", "notification", "permission_request", "posttoolusefailure", "stop_failure"],
+    "headers": {}
   },
 
   "tts_settings": {

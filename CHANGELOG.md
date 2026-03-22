@@ -5,6 +5,34 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.6.0] - 2026-03-22
+
+### Added
+- **Async hook execution**: All hooks now register with `"async": true` in settings.json — Claude Code fires hooks in the background and never waits for audio playback, eliminating 200-500ms latency per hook invocation
+- **Smart matchers**: High-noise hooks now use Claude Code's native regex matchers to reduce notification spam:
+  - `PreToolUse` only fires for `Bash` tool (not Read/Glob/Grep)
+  - `PostToolUseFailure` only fires for `Bash|Write|Edit` tools
+- **User-configurable filters**: New `filters` section in `user_preferences.json` for per-hook regex filtering on stdin JSON fields (e.g., filter by tool_name, error content, agent_type)
+- **Richer notification context**: Desktop notifications now show actionable details from stdin JSON:
+  - "Bash failed: `npm test` — exit code 1" (instead of "Tool failed: Bash")
+  - "Running Bash: `npm install`" (instead of "Running: Bash")
+  - "Permission needed: Bash — `rm -rf node_modules`" (instead of "Permission needed: Bash")
+- **Notification detail level**: New `notification_settings.detail_level` config option (`minimal`, `standard`, `verbose`)
+- **Webhook integration**: Send hook events to external services via HTTP POST:
+  - Supported services: Slack, Discord, Microsoft Teams, ntfy.sh, and custom webhook URLs
+  - New `webhook_settings` section in config with `url`, `format`, `hook_types`, and `headers`
+  - Runs in background thread — never blocks other notifications
+  - Uses only Python standard library (urllib.request) — no external dependencies
+
+### Changed
+- `hook_runner.py` version bumped to 4.6.0
+- All installer scripts (`install-complete.sh`, `install-windows.ps1`, `quick-setup.sh`) now generate async hook registrations
+- `get_notification_context()` rewritten with `_truncate()` helper and `_get_tool_detail()` for richer stdin JSON extraction
+- `run_hook()` pipeline now includes filter check and webhook step
+- Updated all documentation (CLAUDE.md, README.md, CHANGELOG.md, ARCHITECTURE.md)
+
+---
+
 ## [4.5.0] - 2026-03-22
 
 ### Added

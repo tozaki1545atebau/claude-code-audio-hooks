@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.5.0 | **Last Updated:** 2026-03-22
+> **Version:** 4.6.0 | **Last Updated:** 2026-03-22
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -49,6 +49,42 @@ bash scripts/snooze.sh off          # Resume immediately
 bash scripts/configure.sh --snooze 1h   # Via configure.sh
 bash scripts/configure.sh --resume      # Cancel snooze
 ```
+
+### Async Hook Execution (v4.6.0)
+All hooks now register with `"async": true` in settings.json. Claude Code fires hooks in the background and never waits for audio playback, eliminating 200-500ms latency per hook invocation.
+
+### Smart Matchers (v4.6.0)
+High-noise hooks use Claude Code's native regex matchers to reduce spam:
+- `PreToolUse` only fires for `Bash` (not Read/Glob/Grep)
+- `PostToolUseFailure` only fires for `Bash|Write|Edit`
+
+Users can add custom filters in `user_preferences.json`:
+```json
+"filters": {
+    "posttoolusefailure": { "tool_name": "Bash|Write" },
+    "subagent_start": { "agent_type_exclude": "Explore" }
+}
+```
+
+### Richer Notification Context (v4.6.0)
+Desktop notifications now show actionable details:
+- "Bash failed: `npm test` — exit code 1" (instead of "Tool failed: Bash")
+- "Running Bash: `npm install`" (instead of "Running: Bash")
+- "Permission needed: Bash — `rm -rf node_modules`" (instead of "Permission needed: Bash")
+
+Configure detail level: `notification_settings.detail_level` = `"minimal"` | `"standard"` | `"verbose"`
+
+### Webhook Integration (v4.6.0)
+Send notifications to external services (Slack, Discord, Teams, ntfy.sh, or custom URL):
+```json
+"webhook_settings": {
+    "enabled": true,
+    "url": "https://ntfy.sh/my-claude-alerts",
+    "format": "ntfy",
+    "hook_types": ["stop", "notification", "permission_request"]
+}
+```
+Supported formats: `slack`, `discord`, `teams`, `ntfy`, `raw`
 
 ## Platform Detection Decision Tree
 
@@ -239,10 +275,10 @@ The 4 default-enabled hooks are registered. Commands use absolute paths and defe
 ```json
 {
   "hooks": {
-    "Notification": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py notification || true", "timeout": 10}]}],
-    "Stop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py stop || true", "timeout": 10}]}],
-    "SubagentStop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py subagent_stop || true", "timeout": 10}]}],
-    "PermissionRequest": [{"matcher": "", "hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py permission_request || true", "timeout": 10}]}]
+    "Notification": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py notification || true", "timeout": 10, "async": true}]}],
+    "Stop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py stop || true", "timeout": 10, "async": true}]}],
+    "SubagentStop": [{"hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py subagent_stop || true", "timeout": 10, "async": true}]}],
+    "PermissionRequest": [{"matcher": "", "hooks": [{"type": "command", "command": "test -f /home/user/.claude/hooks/hook_runner.py && python3 /home/user/.claude/hooks/hook_runner.py permission_request || true", "timeout": 10, "async": true}]}]
   }
 }
 ```
@@ -283,10 +319,19 @@ D:/github_repository/claude-code-audio-hooks
   "notification_settings": {
     "mode": "audio_and_notification",
     "show_context": true,
+    "detail_level": "standard",
     "per_hook": {
       "pretooluse": "audio_only",
       "posttooluse": "audio_only"
     }
+  },
+  "filters": {},
+  "webhook_settings": {
+    "enabled": false,
+    "url": "",
+    "format": "raw",
+    "hook_types": ["stop", "notification", "permission_request", "posttoolusefailure", "stop_failure"],
+    "headers": {}
   },
   "tts_settings": {
     "enabled": false,
@@ -447,6 +492,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.6.0 | 2026-03-22 | Async hook execution, smart matchers (PreToolUse/PostToolUseFailure), user-configurable filters, richer notification context with detail levels, webhook integration (Slack/Discord/Teams/ntfy) |
 | 4.5.0 | 2026-03-22 | Add 8 new hooks (StopFailure, PostCompact, ConfigChange, InstructionsLoaded, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult), 22 total hooks, 22 unique audio files per theme |
 | 4.4.0 | 2026-03-13 | Snooze / temporary mute: `snooze.sh` CLI, marker-file based, auto-resume; `--snooze`/`--resume` in configure.sh and quick-configure.sh (closes #7) |
 | 4.3.1 | 2026-02-17 | Quick Setup customization: new `quick-configure.sh` for enabling/disabling individual hooks without cloning; fix `quick-unsetup.sh` missing PermissionRequest |

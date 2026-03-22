@@ -81,7 +81,8 @@ generate_macos_hooks() {
         {
           "type": "command",
           "command": "afplay /System/Library/Sounds/Glass.aiff 2>/dev/null & osascript -e 'display notification \"Task completed\" with title \"Claude Code\"' 2>/dev/null; true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -92,7 +93,8 @@ generate_macos_hooks() {
         {
           "type": "command",
           "command": "afplay /System/Library/Sounds/Sosumi.aiff 2>/dev/null & osascript -e 'display notification \"Authorization needed\" with title \"Claude Code\"' 2>/dev/null; true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -103,7 +105,8 @@ generate_macos_hooks() {
         {
           "type": "command",
           "command": "afplay /System/Library/Sounds/Pop.aiff 2>/dev/null & osascript -e 'display notification \"Background task finished\" with title \"Claude Code\"' 2>/dev/null; true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -115,7 +118,8 @@ generate_macos_hooks() {
         {
           "type": "command",
           "command": "afplay /System/Library/Sounds/Basso.aiff 2>/dev/null & osascript -e 'display notification \"Permission required\" with title \"Claude Code\"' 2>/dev/null; true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -133,7 +137,8 @@ generate_linux_hooks() {
         {
           "type": "command",
           "command": "notify-send 'Claude Code' 'Task completed' -i dialog-information 2>/dev/null; paplay /usr/share/sounds/freedesktop/stereo/complete.oga 2>/dev/null || true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -144,7 +149,8 @@ generate_linux_hooks() {
         {
           "type": "command",
           "command": "notify-send -u critical 'Claude Code' 'Authorization needed' -i dialog-warning 2>/dev/null; paplay /usr/share/sounds/freedesktop/stereo/bell.oga 2>/dev/null || true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -155,7 +161,8 @@ generate_linux_hooks() {
         {
           "type": "command",
           "command": "notify-send 'Claude Code' 'Background task finished' -i dialog-information 2>/dev/null; paplay /usr/share/sounds/freedesktop/stereo/message.oga 2>/dev/null || true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -167,7 +174,8 @@ generate_linux_hooks() {
         {
           "type": "command",
           "command": "notify-send -u critical 'Claude Code' 'Permission required' -i dialog-warning 2>/dev/null; paplay /usr/share/sounds/freedesktop/stereo/dialog-warning.oga 2>/dev/null || true",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -185,7 +193,8 @@ generate_wsl_hooks() {
         {
           "type": "command",
           "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Exclamation.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Task completed', [System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Seconds 6; $n.Dispose()\" &",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -196,7 +205,8 @@ generate_wsl_hooks() {
         {
           "type": "command",
           "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Hand.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Warning; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Authorization needed', [System.Windows.Forms.ToolTipIcon]::Warning); Start-Sleep -Seconds 6; $n.Dispose()\" &",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -207,7 +217,8 @@ generate_wsl_hooks() {
         {
           "type": "command",
           "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Asterisk.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Information; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Background task finished', [System.Windows.Forms.ToolTipIcon]::Info); Start-Sleep -Seconds 6; $n.Dispose()\" &",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }
@@ -219,7 +230,8 @@ generate_wsl_hooks() {
         {
           "type": "command",
           "command": "powershell.exe -WindowStyle Hidden -Command \"[System.Media.SystemSounds]::Question.Play(); [void][System.Reflection.Assembly]::LoadWithPartialName('System.Windows.Forms'); $n = New-Object System.Windows.Forms.NotifyIcon; $n.Icon = [System.Drawing.SystemIcons]::Warning; $n.Visible = $true; $n.ShowBalloonTip(5000, 'Claude Code', 'Permission required', [System.Windows.Forms.ToolTipIcon]::Warning); Start-Sleep -Seconds 6; $n.Dispose()\" &",
-          "timeout": 10
+          "timeout": 10,
+          "async": true
         }
       ]
     }

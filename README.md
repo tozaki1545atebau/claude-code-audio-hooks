@@ -6,7 +6,7 @@ Get notified when Claude Code finishes tasks or needs your attention.
 Audio, desktop notifications, and text-to-speech - all platforms.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-4.5.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-4.6.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -265,7 +265,7 @@ graph TB
 | **Native Linux** | ✅ Fully supported | mpg123/aplay | `bash scripts/install-complete.sh` |
 | **Cygwin** | ✅ Fully supported | PowerShell | `bash scripts/install-complete.sh` |
 
-> **NEW in v4.5.0:** Full coverage of all 22 Claude Code hook events including StopFailure, PostCompact, ConfigChange, InstructionsLoaded, WorktreeCreate/Remove, Elicitation, and ElicitationResult! Audio theme switching, auto-sync, and Windows PowerShell support included.
+> **NEW in v4.6.0:** Async hook execution (zero latency), smart matchers (less noise), richer notifications ("Bash failed: `npm test`"), and webhook integration (Slack/Discord/Teams/ntfy.sh)! Full coverage of all 22 Claude Code hook events.
 
 > **Note for Git Bash Users:** Version 2.2+ includes automatic path conversion to handle Git Bash's Unix-style paths. The installer will configure this automatically—no manual setup required!
 
@@ -295,7 +295,7 @@ If Claude Code is missing, install it first. Other prerequisites are usually alr
 **Just copy this to your AI assistant (Claude Code, Cursor, Copilot, ChatGPT, etc.):**
 
 ```
-Please install Claude Code Audio Hooks version 4.5.0 from
+Please install Claude Code Audio Hooks version 4.6.0 from
 https://github.com/ChanMeng666/claude-code-audio-hooks and configure it for me.
 Run: git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git && cd claude-code-audio-hooks && bash scripts/install-complete.sh
 ```
@@ -1112,6 +1112,40 @@ Enable spoken context-aware messages:
 | WSL | SAPI via PowerShell | Built-in |
 
 Custom per-hook messages override the auto-generated context. Hooks not listed in `messages` use the auto-generated context string.
+
+### **Webhook Integration** *(v4.6.0)*
+
+Send notifications to external services — get Claude Code alerts on your phone, in Slack, or anywhere:
+
+```json
+{
+  "webhook_settings": {
+    "enabled": true,
+    "url": "https://ntfy.sh/my-claude-alerts",
+    "format": "ntfy",
+    "hook_types": ["stop", "notification", "permission_request", "posttoolusefailure", "stop_failure"],
+    "headers": {}
+  }
+}
+```
+
+**Supported services:**
+
+| Format | Service | URL Example |
+|--------|---------|-------------|
+| `slack` | Slack Incoming Webhook | `https://hooks.slack.com/services/T.../B.../xxx` |
+| `discord` | Discord Webhook | `https://discord.com/api/webhooks/xxx/yyy` |
+| `teams` | Microsoft Teams Webhook | `https://outlook.office.com/webhook/xxx` |
+| `ntfy` | ntfy.sh (free phone push) | `https://ntfy.sh/your-topic-name` |
+| `raw` | Any custom endpoint | Full JSON payload with hook_type, context, event_data |
+
+**Configure via CLI:**
+```bash
+bash scripts/configure.sh --webhook url=https://ntfy.sh/my-alerts format=ntfy
+bash scripts/configure.sh --webhook enabled=true
+```
+
+Webhooks run in background threads — they never block audio or desktop notifications. Failures are silently logged.
 
 ---
 
@@ -2138,7 +2172,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 4.5.0** - 22 Hook Types + Quick Setup + Desktop Notifications + TTS + Context-Aware Alerts + Auto-Sync + Snooze
+**Current Version: 4.6.0** - 22 Hook Types + Async Execution + Smart Matchers + Webhooks + Desktop Notifications + TTS + Snooze
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 

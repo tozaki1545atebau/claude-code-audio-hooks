@@ -1,6 +1,6 @@
 # System Architecture
 
-> **Version:** 4.5.0 | **Last Updated:** 2026-03-22
+> **Version:** 4.6.0 | **Last Updated:** 2026-03-22
 
 This document explains the technical architecture of Claude Code Audio Hooks.
 

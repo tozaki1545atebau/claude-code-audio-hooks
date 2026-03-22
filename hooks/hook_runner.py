@@ -31,7 +31,7 @@ from typing import Optional, Dict, Any, List
 
 # Version used for auto-sync: when the installed copy in ~/.claude/hooks/
 # detects a newer version in the project directory, it self-updates.
-HOOK_RUNNER_VERSION = "4.5.0"
+HOOK_RUNNER_VERSION = "4.6.0"
 
 # =============================================================================
 # DEBUG LOGGING SYSTEM
@@ -516,6 +516,42 @@ def should_debounce(hook_type: str) -> bool:
 
     return False
 
+
+def should_filter(hook_type: str, stdin_data: dict, config: Dict[str, Any]) -> bool:
+    """Check user-defined filters. Returns True if hook should be skipped.
+
+    Filters are per-hook regex patterns matched against stdin JSON fields.
+    A field ending with '_exclude' inverts the match (skip if pattern matches).
+    Otherwise, skip if the pattern does NOT match the field value.
+    """
+    filters = config.get("filters", {}).get(hook_type, {})
+    if not filters:
+        return False
+
+    for field, pattern in filters.items():
+        if not isinstance(pattern, str) or not pattern:
+            continue
+        if field.startswith("_"):
+            continue  # skip comment keys
+
+        try:
+            if field.endswith("_exclude"):
+                real_field = field[:-8]
+                value = str(stdin_data.get(real_field, ""))
+                if value and re.search(pattern, value):
+                    log_debug(f"Filter: {hook_type} excluded by {real_field} matching '{pattern}'")
+                    return True
+            else:
+                value = str(stdin_data.get(field, ""))
+                if value and not re.search(pattern, value):
+                    log_debug(f"Filter: {hook_type} skipped — {field}='{value}' doesn't match '{pattern}'")
+                    return True
+        except re.error as e:
+            log_debug(f"Filter regex error for {field}: {e}")
+
+    return False
+
+
 # =============================================================================
 # AUDIO PLAYBACK FUNCTIONS
 # =============================================================================
@@ -815,57 +851,102 @@ def parse_stdin() -> dict:
 # CONTEXT EXTRACTION
 # =============================================================================
 
-def get_notification_context(hook_type: str, stdin_data: dict) -> str:
-    """Generate human-readable context from hook data."""
+def _truncate(s: str, max_len: int = 60) -> str:
+    """Truncate a string with ellipsis if too long."""
+    return (s[:max_len - 3] + "...") if len(s) > max_len else s
+
+
+def _get_tool_detail(stdin_data: dict, max_len: int = 60) -> str:
+    """Extract a brief detail string from tool_input (command, file_path, etc.)."""
+    tool_input = stdin_data.get("tool_input", {})
+    if not isinstance(tool_input, dict):
+        return ""
+    # Try common fields in priority order
+    for key in ("command", "file_path", "pattern", "query", "url", "prompt"):
+        val = tool_input.get(key, "")
+        if val:
+            return _truncate(str(val), max_len)
+    return ""
+
+
+def get_notification_context(hook_type: str, stdin_data: dict, detail_level: str = "standard") -> str:
+    """Generate human-readable context from hook data.
+
+    detail_level: 'minimal' (hook name only), 'standard' (tool + brief context), 'verbose' (full detail)
+    """
+    max_len = 40 if detail_level == "standard" else 120 if detail_level == "verbose" else 0
+
     if hook_type == "stop":
         return "Task completed"
     elif hook_type == "notification":
         msg = stdin_data.get("message", "")
-        return "Authorization needed" + (f": {msg[:80]}" if msg else "")
+        return "Authorization needed" + (f": {_truncate(msg, 80)}" if msg else "")
     elif hook_type == "pretooluse":
         tool = stdin_data.get("tool_name", "unknown")
-        return f"Running: {tool}"
+        if detail_level == "minimal":
+            return f"Running: {tool}"
+        detail = _get_tool_detail(stdin_data, max_len)
+        return f"Running {tool}" + (f": {detail}" if detail else "")
     elif hook_type == "posttooluse":
         tool = stdin_data.get("tool_name", "unknown")
-        return f"Completed: {tool}"
+        if detail_level == "minimal":
+            return f"Completed: {tool}"
+        detail = _get_tool_detail(stdin_data, max_len)
+        return f"Completed {tool}" + (f": {detail}" if detail else "")
     elif hook_type == "subagent_stop":
         agent = stdin_data.get("agent_type", "")
         return "Background task finished" + (f" ({agent})" if agent else "")
     elif hook_type == "session_start":
-        return "Session started"
+        source = stdin_data.get("source", "")
+        return "Session started" + (f" ({source})" if source and detail_level != "minimal" else "")
     elif hook_type == "session_end":
-        return "Session ended"
+        reason = stdin_data.get("reason", "")
+        return "Session ended" + (f" ({reason})" if reason and detail_level != "minimal" else "")
     elif hook_type == "precompact":
-        return "Compacting context"
+        trigger = stdin_data.get("trigger", "")
+        return "Compacting context" + (f" ({trigger})" if trigger and detail_level != "minimal" else "")
     elif hook_type == "userpromptsubmit":
         return "Prompt received"
     elif hook_type == "permission_request":
         tool = stdin_data.get("tool_name", "unknown")
-        return f"Permission needed: {tool}"
+        if detail_level == "minimal":
+            return f"Permission needed: {tool}"
+        detail = _get_tool_detail(stdin_data, max_len)
+        return f"Permission needed: {tool}" + (f" — {detail}" if detail else "")
     elif hook_type == "posttoolusefailure":
         tool = stdin_data.get("tool_name", "unknown")
         error = stdin_data.get("error", "")
-        return f"Tool failed: {tool}" + (f" - {error[:60]}" if error else "")
+        if detail_level == "minimal":
+            return f"Tool failed: {tool}"
+        detail = _get_tool_detail(stdin_data, max_len)
+        base = f"{tool} failed"
+        if detail:
+            base += f": {detail}"
+        if error:
+            base += f" — {_truncate(error, max_len)}"
+        return base
     elif hook_type == "subagent_start":
         agent_type = stdin_data.get("agent_type", "")
-        return f"Subagent starting" + (f": {agent_type}" if agent_type else "")
+        return "Subagent starting" + (f": {agent_type}" if agent_type else "")
     elif hook_type == "teammate_idle":
         teammate = stdin_data.get("teammate_name", "unknown")
         team = stdin_data.get("team_name", "")
         return f"Teammate idle: {teammate}" + (f" ({team})" if team else "")
     elif hook_type == "task_completed":
         subject = stdin_data.get("task_subject", "")
-        return f"Task completed" + (f": {subject[:60]}" if subject else "")
+        return "Task completed" + (f": {_truncate(subject, 60)}" if subject else "")
     elif hook_type == "stop_failure":
         error = stdin_data.get("error", "unknown")
         details = stdin_data.get("error_details", "")
-        return f"API error: {error}" + (f" - {details[:60]}" if details else "")
+        return f"API error: {error}" + (f" — {_truncate(details, max_len)}" if details else "")
     elif hook_type == "postcompact":
         trigger = stdin_data.get("trigger", "")
-        return f"Context compaction complete" + (f" ({trigger})" if trigger else "")
+        return "Context compaction complete" + (f" ({trigger})" if trigger else "")
     elif hook_type == "config_change":
         source = stdin_data.get("source", "unknown")
-        return f"Configuration changed: {source}"
+        file_path = stdin_data.get("file_path", "")
+        name = Path(file_path).name if file_path and detail_level != "minimal" else ""
+        return f"Configuration changed: {source}" + (f" ({name})" if name else "")
     elif hook_type == "instructions_loaded":
         file_path = stdin_data.get("file_path", "")
         reason = stdin_data.get("load_reason", "")
@@ -873,15 +954,15 @@ def get_notification_context(hook_type: str, stdin_data: dict) -> str:
         return f"Instructions loaded: {name}" + (f" ({reason})" if reason else "")
     elif hook_type == "worktree_create":
         name = stdin_data.get("name", "")
-        return f"Worktree created" + (f": {name}" if name else "")
+        return "Worktree created" + (f": {name}" if name else "")
     elif hook_type == "worktree_remove":
         wt_path = stdin_data.get("worktree_path", "")
         name = Path(wt_path).name if wt_path else ""
-        return f"Worktree removed" + (f": {name}" if name else "")
+        return "Worktree removed" + (f": {name}" if name else "")
     elif hook_type == "elicitation":
         server = stdin_data.get("mcp_server_name", "unknown")
         msg = stdin_data.get("message", "")
-        return f"Input requested by {server}" + (f": {msg[:60]}" if msg else "")
+        return f"Input requested by {server}" + (f": {_truncate(msg, 60)}" if msg else "")
     elif hook_type == "elicitation_result":
         server = stdin_data.get("mcp_server_name", "unknown")
         action = stdin_data.get("action", "")
@@ -1066,6 +1147,76 @@ def play_tts(message: str) -> bool:
     return False
 
 # =============================================================================
+# WEBHOOK
+# =============================================================================
+
+def send_webhook(hook_type: str, context: str, stdin_data: dict, config: Dict[str, Any]) -> None:
+    """Send hook event to a configured webhook URL (Slack, Discord, Teams, ntfy, or custom).
+
+    Runs in a background thread to avoid blocking. Failures are logged but never
+    raise exceptions or affect other notification channels.
+    """
+    webhook = config.get("webhook_settings", {})
+    if not webhook.get("enabled"):
+        return
+
+    url = webhook.get("url", "")
+    if not url:
+        return
+
+    # Check if this hook type should trigger webhook
+    allowed = webhook.get("hook_types", [])
+    if allowed and hook_type not in allowed:
+        return
+
+    fmt = webhook.get("format", "raw")
+    headers = dict(webhook.get("headers", {}))
+
+    # Format payload based on target service
+    if fmt == "slack":
+        payload: Any = {"text": f"\U0001f514 Claude Code: {context}"}
+    elif fmt == "discord":
+        payload = {"content": f"\U0001f514 Claude Code: {context}"}
+    elif fmt == "teams":
+        payload = {"text": f"\U0001f514 Claude Code: {context}"}
+    elif fmt == "ntfy":
+        # ntfy.sh uses plain text body with header-based metadata
+        headers.setdefault("Title", "Claude Code")
+        headers.setdefault("Priority", "default")
+        headers.setdefault("Tags", "robot")
+        payload = context  # plain text
+    elif fmt == "raw":
+        payload = {
+            "hook_type": hook_type,
+            "context": context,
+            "event_data": {k: v for k, v in stdin_data.items()
+                          if k not in ("transcript_path",)},
+            "timestamp": time.time()
+        }
+    else:
+        payload = {"text": f"Claude Code: {context}"}
+
+    import threading
+
+    def _send():
+        try:
+            import urllib.request
+            if isinstance(payload, str):
+                data = payload.encode("utf-8")
+                headers.setdefault("Content-Type", "text/plain")
+            else:
+                data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
+                headers.setdefault("Content-Type", "application/json")
+            req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+            urllib.request.urlopen(req, timeout=10)
+            log_debug(f"Webhook sent to {url} for {hook_type}")
+        except Exception as e:
+            log_debug(f"Webhook failed for {hook_type}: {e}")
+
+    threading.Thread(target=_send, daemon=True).start()
+
+
+# =============================================================================
 # MAIN HOOK EXECUTION
 # =============================================================================
 
@@ -1097,8 +1248,13 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
         log_trigger(hook_type, "DEBOUNCED")
         return 0
 
-    # Load config once for notification/TTS settings
+    # Load config once for notification/TTS/filter/webhook settings
     config = load_config()
+
+    # Check user-defined filters
+    if should_filter(hook_type, stdin_data or {}, config):
+        log_trigger(hook_type, "FILTERED")
+        return 0
 
     # Determine notification mode with per-hook override support
     notification_settings = config.get("notification_settings", {})
@@ -1112,6 +1268,11 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
         log_debug(f"Invalid per_hook mode '{mode}' for {hook_type}, falling back to '{global_mode}'")
         mode = global_mode
     log_debug(f"Notification mode for {hook_type}: {mode} (global={global_mode})")
+
+    # Get detail level for context messages
+    detail_level = notification_settings.get("detail_level", "standard")
+    if detail_level not in ("minimal", "standard", "verbose"):
+        detail_level = "standard"
 
     # Play audio (unless mode is notification_only or disabled)
     if mode in ("audio_only", "audio_and_notification"):
@@ -1135,8 +1296,8 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
 
     # Desktop notification (unless mode is audio_only or disabled)
     if mode in ("notification_only", "audio_and_notification"):
-        context = get_notification_context(hook_type, stdin_data or {})
-        urgency = "critical" if hook_type in ("notification", "permission_request", "posttoolusefailure") else "normal"
+        context = get_notification_context(hook_type, stdin_data or {}, detail_level)
+        urgency = "critical" if hook_type in ("notification", "permission_request", "posttoolusefailure", "stop_failure", "elicitation") else "normal"
         notif_sent = send_desktop_notification("Claude Code", context, urgency)
         if notif_sent:
             log_debug(f"Desktop notification sent for {hook_type}: {context}")
@@ -1146,12 +1307,16 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     # TTS (text-to-speech)
     tts_settings = config.get("tts_settings", {})
     if tts_settings.get("enabled", False):
-        context = get_notification_context(hook_type, stdin_data or {})
+        context = get_notification_context(hook_type, stdin_data or {}, detail_level)
         custom_messages = tts_settings.get("messages", {})
         tts_message = custom_messages.get(hook_type, context)
         tts_sent = play_tts(tts_message)
         if tts_sent:
             log_debug(f"TTS played for {hook_type}: {tts_message}")
+
+    # Webhook
+    context = get_notification_context(hook_type, stdin_data or {}, detail_level)
+    send_webhook(hook_type, context, stdin_data or {}, config)
 
     return 0
 
