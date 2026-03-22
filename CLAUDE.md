@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.6.0 | **Last Updated:** 2026-03-22
+> **Version:** 4.7.0 | **Last Updated:** 2026-03-22
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -85,6 +85,22 @@ Send notifications to external services (Slack, Discord, Teams, ntfy.sh, or cust
 }
 ```
 Supported formats: `slack`, `discord`, `teams`, `ntfy`, `raw`
+
+### Focus Flow: Anti-Distraction Micro-Tasks (v4.7.0)
+Launches a lightweight activity during Claude's thinking time. Auto-closes when Claude finishes.
+
+```json
+"focus_flow": {
+    "enabled": true,
+    "mode": "breathing",
+    "min_thinking_seconds": 15,
+    "breathing_pattern": "4-7-8"
+}
+```
+
+Modes: `breathing` (guided exercise in terminal), `hydration` (drink/stretch reminder), `url` (open a webpage), `command` (run custom script), `disabled`
+
+How it works: `UserPromptSubmit` → start timer → after `min_thinking_seconds` launch micro-task → `Stop` → auto-kill micro-task
 
 ## Platform Detection Decision Tree
 
@@ -326,6 +342,12 @@ D:/github_repository/claude-code-audio-hooks
     }
   },
   "filters": {},
+  "focus_flow": {
+    "enabled": false,
+    "mode": "breathing",
+    "min_thinking_seconds": 15,
+    "breathing_pattern": "4-7-8"
+  },
   "webhook_settings": {
     "enabled": false,
     "url": "",
@@ -492,6 +514,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.7.0 | 2026-03-22 | Focus Flow: anti-distraction micro-tasks during Claude's thinking time (breathing exercises, hydration reminders, custom URL/command), auto-close on task completion |
 | 4.6.0 | 2026-03-22 | Async hook execution, smart matchers (PreToolUse/PostToolUseFailure), user-configurable filters, richer notification context with detail levels, webhook integration (Slack/Discord/Teams/ntfy) |
 | 4.5.0 | 2026-03-22 | Add 8 new hooks (StopFailure, PostCompact, ConfigChange, InstructionsLoaded, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult), 22 total hooks, 22 unique audio files per theme |
 | 4.4.0 | 2026-03-13 | Snooze / temporary mute: `snooze.sh` CLI, marker-file based, auto-resume; `--snooze`/`--resume` in configure.sh and quick-configure.sh (closes #7) |

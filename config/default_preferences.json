@@ -110,6 +110,16 @@
     "headers": {}
   },
 
+  "focus_flow": {
+    "_comment": "Micro-task anti-distraction during Claude's thinking time. Modes: breathing, hydration, url, command, disabled",
+    "enabled": false,
+    "mode": "breathing",
+    "min_thinking_seconds": 15,
+    "url": "",
+    "command": "",
+    "breathing_pattern": "4-7-8"
+  },
+
   "tts_settings": {
     "_comment": "Text-to-speech mode - speaks context-aware messages. Requires: macOS (say), Linux (espeak/spd-say), Windows (SAPI)",
     "enabled": false,

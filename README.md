@@ -6,7 +6,7 @@ Get notified when Claude Code finishes tasks or needs your attention.
 Audio, desktop notifications, and text-to-speech - all platforms.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-4.6.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-4.7.0-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.0.32%2B-brightgreen.svg)](https://claude.ai/download)
 
@@ -265,7 +265,7 @@ graph TB
 | **Native Linux** | ✅ Fully supported | mpg123/aplay | `bash scripts/install-complete.sh` |
 | **Cygwin** | ✅ Fully supported | PowerShell | `bash scripts/install-complete.sh` |
 
-> **NEW in v4.6.0:** Async hook execution (zero latency), smart matchers (less noise), richer notifications ("Bash failed: `npm test`"), and webhook integration (Slack/Discord/Teams/ntfy.sh)! Full coverage of all 22 Claude Code hook events.
+> **NEW in v4.7.0:** Focus Flow anti-distraction system — guided breathing exercises, wellness reminders, and custom micro-tasks that auto-launch during Claude's thinking time and auto-close when Claude finishes! Plus async hooks, smart matchers, rich notifications, and webhook integration.
 
 > **Note for Git Bash Users:** Version 2.2+ includes automatic path conversion to handle Git Bash's Unix-style paths. The installer will configure this automatically—no manual setup required!
 
@@ -1146,6 +1146,59 @@ bash scripts/configure.sh --webhook enabled=true
 ```
 
 Webhooks run in background threads — they never block audio or desktop notifications. Failures are silently logged.
+
+### **Focus Flow: Anti-Distraction Micro-Tasks** *(v4.7.0)*
+
+Stay present during Claude's thinking time instead of reaching for your phone. Focus Flow automatically launches a lightweight activity when Claude starts processing and **auto-closes it when Claude finishes**.
+
+```
+You submit prompt → Claude starts thinking → Focus Flow activates
+                         ↓ (15s delay)
+                    Micro-task keeps you engaged
+                         ↓
+                    Claude finishes → Micro-task auto-closes
+```
+
+**Available modes:**
+
+| Mode | What happens |
+|------|-------------|
+| `breathing` | Opens a terminal with guided breathing exercise (4-7-8, box breathing, or energizing pattern) with visual progress bars |
+| `hydration` | Shows a desktop notification reminder (drink water, stretch, check posture, rest eyes, or deep breath) |
+| `url` | Opens a URL in your browser (e.g., your Jira board, GitHub issues, or daily standup notes) |
+| `command` | Runs any custom shell command you define |
+
+**Enable it:**
+```json
+{
+  "focus_flow": {
+    "enabled": true,
+    "mode": "breathing",
+    "min_thinking_seconds": 15,
+    "breathing_pattern": "4-7-8"
+  }
+}
+```
+
+**Or ask Claude Code:**
+```
+Enable Focus Flow with breathing exercises and a 20 second delay
+```
+
+**Breathing patterns available:** `4-7-8` (calming), `box` (Navy SEAL focus technique), `energize` (quick energizer)
+
+**Custom URL example** — open your GitHub issues while waiting:
+```json
+{
+  "focus_flow": {
+    "enabled": true,
+    "mode": "url",
+    "url": "https://github.com/your-org/your-repo/issues"
+  }
+}
+```
+
+The `min_thinking_seconds` (default: 15) prevents micro-tasks from appearing for quick 2-second responses.
 
 ---
 
@@ -2083,7 +2136,10 @@ claude-code-audio-hooks/
 │   ├── uninstall.sh                # Complete removal
 │   ├── snooze.sh                   # Snooze / temporary mute tool
 │   ├── test-audio.sh               # Audio testing tool
-│   └── diagnose.py                 # Diagnostic tool
+│   ├── diagnose.py                 # Diagnostic tool
+│   ├── focus-flow.py               # Focus Flow micro-task launcher
+│   └── focus-flow-tasks/           # Micro-task data files
+│       └── breathing_patterns.json # Breathing exercise patterns
 ├── docs/
 │   ├── ARCHITECTURE.md             # System architecture
 │   ├── INSTALLATION_GUIDE.md       # Detailed installation guide
@@ -2172,7 +2228,7 @@ MIT License - You're free to use, modify, and distribute this project.
 
 **⭐ If this helped you, please star this repo! ⭐**
 
-**Current Version: 4.6.0** - 22 Hook Types + Async Execution + Smart Matchers + Webhooks + Desktop Notifications + TTS + Snooze
+**Current Version: 4.7.0** - 22 Hook Types + Focus Flow + Async Execution + Smart Matchers + Webhooks + Desktop Notifications + TTS + Snooze
 
 [Report Bug](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Request Feature](https://github.com/ChanMeng666/claude-code-audio-hooks/issues) · [Ask Question](https://github.com/ChanMeng666/claude-code-audio-hooks/discussions)
 

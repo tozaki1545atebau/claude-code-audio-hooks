@@ -5,6 +5,28 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.7.0] - 2026-03-22
+
+### Added
+- **Focus Flow: Anti-distraction micro-tasks** during Claude's thinking time
+  - Automatically launches a micro-task when Claude starts processing (UserPromptSubmit) and auto-closes when Claude finishes (Stop)
+  - **Breathing mode**: Guided 4-7-8 / box / energizing breathing exercises in a dedicated terminal window with visual progress bars and emoji prompts
+  - **Hydration mode**: Random wellness reminders (drink water, stretch, posture check, eye rest, deep breath) via desktop notifications
+  - **URL mode**: Open a custom URL in the browser (GitHub issues, Jira board, etc.)
+  - **Command mode**: Run any custom shell command
+  - Configurable `min_thinking_seconds` delay (default: 15s) — prevents micro-tasks from flashing for quick responses
+  - Marker-file state tracking with PID-based process cleanup (same pattern as snooze system)
+  - Cross-platform support: Windows (cmd), macOS (Terminal.app), Linux (xterm/gnome-terminal)
+  - New `scripts/focus-flow.py` standalone launcher with `scripts/focus-flow-tasks/breathing_patterns.json` data file
+  - New `focus_flow` config section in user_preferences.json (disabled by default)
+
+### Changed
+- `hook_runner.py` version bumped to 4.7.0
+- `run_hook()` pipeline now includes Focus Flow start/stop lifecycle
+- Updated all documentation
+
+---
+
 ## [4.6.0] - 2026-03-22
 
 ### Added

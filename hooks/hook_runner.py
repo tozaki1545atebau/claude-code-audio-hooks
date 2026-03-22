@@ -31,7 +31,7 @@ from typing import Optional, Dict, Any, List
 
 # Version used for auto-sync: when the installed copy in ~/.claude/hooks/
 # detects a newer version in the project directory, it self-updates.
-HOOK_RUNNER_VERSION = "4.6.0"
+HOOK_RUNNER_VERSION = "4.7.0"
 
 # =============================================================================
 # DEBUG LOGGING SYSTEM
@@ -1217,6 +1217,97 @@ def send_webhook(hook_type: str, context: str, stdin_data: dict, config: Dict[st
 
 
 # =============================================================================
+# FOCUS FLOW (MICRO-TASK ANTI-DISTRACTION)
+# =============================================================================
+
+def start_focus_flow(hook_type: str, config: Dict[str, Any]) -> None:
+    """Launch a Focus Flow micro-task when UserPromptSubmit fires.
+
+    Spawns scripts/focus-flow.py in the background, which waits for
+    min_thinking_seconds before starting the task. If Claude finishes
+    before the delay, stop_focus_flow() deletes the marker file and
+    focus-flow.py exits without doing anything.
+    """
+    if hook_type != "userpromptsubmit":
+        return
+
+    ff = config.get("focus_flow", {})
+    if not ff.get("enabled"):
+        return
+
+    mode = ff.get("mode", "breathing")
+    if mode == "disabled":
+        return
+
+    min_seconds = ff.get("min_thinking_seconds", 15)
+    marker = QUEUE_DIR / "focus_flow_active"
+
+    # Write marker with timestamp
+    try:
+        marker.write_text(str(time.time()), encoding="utf-8")
+    except OSError:
+        return
+
+    # Launch the delayed micro-task starter
+    launcher = PROJECT_DIR / "scripts" / "focus-flow.py"
+    if not launcher.exists():
+        log_debug(f"Focus Flow: launcher not found at {launcher}")
+        return
+
+    breathing_pattern = ff.get("breathing_pattern", "4-7-8")
+    url = ff.get("url", "")
+    command = ff.get("command", "")
+
+    try:
+        creation_flags = {}
+        if os.name == "nt" and hasattr(subprocess, "CREATE_NO_WINDOW"):
+            creation_flags["creationflags"] = subprocess.CREATE_NO_WINDOW
+
+        subprocess.Popen(
+            [sys.executable, str(launcher), mode, str(min_seconds),
+             str(marker), url, command, breathing_pattern],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            **creation_flags
+        )
+        log_debug(f"Focus Flow: launcher started (mode={mode}, delay={min_seconds}s)")
+    except Exception as e:
+        log_debug(f"Focus Flow: failed to start launcher: {e}")
+
+
+def stop_focus_flow() -> None:
+    """Stop any running Focus Flow micro-task when Claude finishes."""
+    marker = QUEUE_DIR / "focus_flow_active"
+    pid_file = QUEUE_DIR / "focus_flow_pid"
+
+    # Kill micro-task process if running
+    if pid_file.exists():
+        try:
+            pid = int(pid_file.read_text(encoding="utf-8").strip())
+            if os.name == "nt":
+                subprocess.run(
+                    ["taskkill", "/F", "/T", "/PID", str(pid)],
+                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
+                )
+            else:
+                os.kill(pid, 15)  # SIGTERM
+            log_debug(f"Focus Flow: killed micro-task PID {pid}")
+        except (ValueError, OSError, ProcessLookupError):
+            pass
+        try:
+            pid_file.unlink()
+        except OSError:
+            pass
+
+    # Remove marker (also signals the launcher to exit if still in delay)
+    if marker.exists():
+        try:
+            marker.unlink()
+        except OSError:
+            pass
+
+
+# =============================================================================
 # MAIN HOOK EXECUTION
 # =============================================================================
 
@@ -1255,6 +1346,12 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     if should_filter(hook_type, stdin_data or {}, config):
         log_trigger(hook_type, "FILTERED")
         return 0
+
+    # Focus Flow: start micro-task on prompt submit, stop on completion
+    if hook_type == "userpromptsubmit":
+        start_focus_flow(hook_type, config)
+    elif hook_type in ("stop", "stop_failure"):
+        stop_focus_flow()
 
     # Determine notification mode with per-hook override support
     notification_settings = config.get("notification_settings", {})
