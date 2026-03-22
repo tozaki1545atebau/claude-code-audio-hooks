@@ -505,7 +505,7 @@ try:
 
     if is_windows:
         # Windows: Use Python hook_runner.py for reliable execution
-        hooks_dir = home_dir.replace('\\', '/') + '/.claude/hooks'
+        hooks_dir = home_dir.replace(os.sep, '/') + '/.claude/hooks'
         hook_runner = f'{hooks_dir}/hook_runner.py'
 
         for hook_name, hook_type in all_hook_types.items():
