@@ -49,7 +49,31 @@
     "teammate_idle": true,
 
     "_comment_task_completed": "✅ ENABLED - Plays when an Agent Teams task is completed",
-    "task_completed": true
+    "task_completed": true,
+
+    "_comment_stop_failure": "✅ ENABLED - Plays when API error occurs (rate limit, auth failure, etc.)",
+    "stop_failure": true,
+
+    "_comment_postcompact": "✅ ENABLED - Plays after context compaction completes",
+    "postcompact": true,
+
+    "_comment_config_change": "✅ ENABLED - Plays when configuration files change during session",
+    "config_change": true,
+
+    "_comment_instructions_loaded": "✅ ENABLED - Plays when CLAUDE.md or rules files are loaded",
+    "instructions_loaded": true,
+
+    "_comment_worktree_create": "✅ ENABLED - Plays when a worktree is created for isolated tasks",
+    "worktree_create": true,
+
+    "_comment_worktree_remove": "✅ ENABLED - Plays when a worktree is removed/cleaned up",
+    "worktree_remove": true,
+
+    "_comment_elicitation": "✅ ENABLED - Plays when an MCP server requests user input",
+    "elicitation": true,
+
+    "_comment_elicitation_result": "✅ ENABLED - Plays after user responds to an MCP elicitation",
+    "elicitation_result": true
   },
 
   "playback_settings": {
@@ -88,7 +112,11 @@
       "posttoolusefailure": "Tool execution failed",
       "subagent_start": "Background task starting",
       "teammate_idle": "Teammate is idle",
-      "task_completed": "Team task completed"
+      "task_completed": "Team task completed",
+      "stop_failure": "API error occurred",
+      "postcompact": "Context compaction complete",
+      "config_change": "Configuration changed",
+      "elicitation": "Input requested by MCP server"
     }
   },
 

@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks - AI Assistant Guide
 
-> **Version:** 4.4.0 | **Last Updated:** 2026-03-13
+> **Version:** 4.5.0 | **Last Updated:** 2026-03-22
 
 This document is designed for AI assistants (Claude Code, Cursor, Copilot, etc.) to understand and help users install this project correctly.
 
@@ -88,8 +88,8 @@ claude-code-audio-hooks/
 ├── CHANGELOG.md                 # Version history
 │
 ├── audio/
-│   ├── default/                 # Voice audio files (14 MP3 files, ElevenLabs Jessica)
-│   └── custom/                  # Chime audio files (14 MP3 files, non-voice sound effects)
+│   ├── default/                 # Voice audio files (22 MP3 files, ElevenLabs Jessica)
+│   └── custom/                  # Chime audio files (22 MP3 files, non-voice sound effects)
 │       ├── notification-urgent.mp3  # Authorization requests
 │       ├── task-complete.mp3        # Task completion (Stop)
 │       ├── session-start.mp3        # Session begins
@@ -103,7 +103,15 @@ claude-code-audio-hooks/
 │       ├── tool-failed.mp3          # Tool execution failed
 │       ├── subagent-start.mp3       # Subagent spawned
 │       ├── teammate-idle.mp3        # Teammate goes idle
-│       └── team-task-done.mp3       # Team task completed
+│       ├── team-task-done.mp3       # Team task completed
+│       ├── stop-failure.mp3         # API error / stop failure
+│       ├── post-compact.mp3         # After context compaction
+│       ├── config-change.mp3        # Configuration changed
+│       ├── instructions-loaded.mp3  # Instructions/rules loaded
+│       ├── worktree-create.mp3      # Worktree created
+│       ├── worktree-remove.mp3      # Worktree removed
+│       ├── elicitation.mp3          # MCP elicitation request
+│       └── elicitation-result.mp3   # Elicitation response
 │
 ├── config/
 │   ├── default_preferences.json # Default settings template
@@ -151,6 +159,14 @@ graph TD
         H12[SubagentStart] -->|"Subagent spawned"| A12[subagent-start.mp3]
         H13[TeammateIdle] -->|"Teammate idle"| A13[teammate-idle.mp3]
         H14[TaskCompleted] -->|"Task done"| A14[team-task-done.mp3]
+        H15[StopFailure] -->|"API error"| A15[stop-failure.mp3]
+        H16[PostCompact] -->|"Compacted"| A16[post-compact.mp3]
+        H17[ConfigChange] -->|"Config updated"| A17[config-change.mp3]
+        H18[InstructionsLoaded] -->|"Rules loaded"| A18[instructions-loaded.mp3]
+        H19[WorktreeCreate] -->|"Worktree created"| A19[worktree-create.mp3]
+        H20[WorktreeRemove] -->|"Worktree removed"| A20[worktree-remove.mp3]
+        H21[Elicitation] -->|"Input needed"| A21[elicitation.mp3]
+        H22[ElicitationResult] -->|"Response sent"| A22[elicitation-result.mp3]
     end
 ```
 
@@ -170,6 +186,14 @@ graph TD
 | `SubagentStart` | Subagent spawned | subagent-start.mp3 | Optional |
 | `TeammateIdle` | Teammate goes idle | teammate-idle.mp3 | Optional |
 | `TaskCompleted` | Team task completed | team-task-done.mp3 | Optional |
+| `StopFailure` | API error (rate limit, etc.) | stop-failure.mp3 | Optional |
+| `PostCompact` | After context compaction | post-compact.mp3 | Optional |
+| `ConfigChange` | Configuration file changed | config-change.mp3 | Optional |
+| `InstructionsLoaded` | CLAUDE.md/rules loaded | instructions-loaded.mp3 | Optional |
+| `WorktreeCreate` | Worktree created | worktree-create.mp3 | Optional |
+| `WorktreeRemove` | Worktree removed | worktree-remove.mp3 | Optional |
+| `Elicitation` | MCP server needs input | elicitation.mp3 | Optional |
+| `ElicitationResult` | Elicitation response sent | elicitation-result.mp3 | Optional |
 
 ## Installation Prerequisites
 
@@ -246,7 +270,15 @@ D:/github_repository/claude-code-audio-hooks
     "precompact": false,
     "subagent_start": false,
     "teammate_idle": false,
-    "task_completed": false
+    "task_completed": false,
+    "stop_failure": false,
+    "postcompact": false,
+    "config_change": false,
+    "instructions_loaded": false,
+    "worktree_create": false,
+    "worktree_remove": false,
+    "elicitation": false,
+    "elicitation_result": false
   },
   "notification_settings": {
     "mode": "audio_and_notification",
@@ -265,7 +297,11 @@ D:/github_repository/claude-code-audio-hooks
       "posttoolusefailure": "Tool execution failed",
       "subagent_start": "Background task starting",
       "teammate_idle": "Teammate is idle",
-      "task_completed": "Team task completed"
+      "task_completed": "Team task completed",
+      "stop_failure": "API error occurred",
+      "postcompact": "Context compaction complete",
+      "config_change": "Configuration changed",
+      "elicitation": "Input requested by MCP server"
     }
   }
 }
@@ -310,8 +346,8 @@ python scripts/diagnose.py -v --test-audio
 ## Audio Customization
 
 ### Two Built-in Audio Themes
-- **default** (`audio/default/`): 14 professional ElevenLabs Jessica voice recordings
-- **custom** (`audio/custom/`): 14 modern UI sound effects (non-voice chimes)
+- **default** (`audio/default/`): 22 professional ElevenLabs Jessica voice recordings
+- **custom** (`audio/custom/`): 22 modern UI sound effects (non-voice chimes)
 
 ### Switching Themes (Two Methods)
 
@@ -411,6 +447,7 @@ Instruct user to:
 
 | Version | Date | Key Changes |
 |---------|------|-------------|
+| 4.5.0 | 2026-03-22 | Add 8 new hooks (StopFailure, PostCompact, ConfigChange, InstructionsLoaded, WorktreeCreate, WorktreeRemove, Elicitation, ElicitationResult), 22 total hooks, 22 unique audio files per theme |
 | 4.4.0 | 2026-03-13 | Snooze / temporary mute: `snooze.sh` CLI, marker-file based, auto-resume; `--snooze`/`--resume` in configure.sh and quick-configure.sh (closes #7) |
 | 4.3.1 | 2026-02-17 | Quick Setup customization: new `quick-configure.sh` for enabling/disabling individual hooks without cloning; fix `quick-unsetup.sh` missing PermissionRequest |
 | 4.3.0 | 2026-02-17 | Per-hook notification mode overrides: independently control audio/desktop notifications per hook type via `notification_settings.per_hook` |

@@ -340,9 +340,17 @@ function Step-ConfigureSettings {
         'SubagentStart' = 'subagent_start'
         'TeammateIdle' = 'teammate_idle'
         'TaskCompleted' = 'task_completed'
+        'StopFailure' = 'stop_failure'
+        'PostCompact' = 'postcompact'
+        'ConfigChange' = 'config_change'
+        'InstructionsLoaded' = 'instructions_loaded'
+        'WorktreeCreate' = 'worktree_create'
+        'WorktreeRemove' = 'worktree_remove'
+        'Elicitation' = 'elicitation'
+        'ElicitationResult' = 'elicitation_result'
     }
 
-    $hooksWithMatcher = @('PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart')
+    $hooksWithMatcher = @('PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart', 'SubagentStop', 'Notification', 'ConfigChange', 'InstructionsLoaded', 'PreCompact', 'PostCompact', 'SessionStart', 'SessionEnd', 'StopFailure', 'Elicitation', 'ElicitationResult')
     $registered = 0
 
     foreach ($hookName in $hookTypes.Keys) {

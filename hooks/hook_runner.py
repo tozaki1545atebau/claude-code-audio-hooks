@@ -10,7 +10,9 @@ Usage:
 Hook types: notification, stop, pretooluse, posttooluse, posttoolusefailure,
             userpromptsubmit, subagent_stop, subagent_start, precompact,
             session_start, session_end, permission_request,
-            teammate_idle, task_completed
+            teammate_idle, task_completed, stop_failure, postcompact,
+            config_change, instructions_loaded, worktree_create,
+            worktree_remove, elicitation, elicitation_result
 
 Environment Variables:
     CLAUDE_HOOKS_DEBUG=1    Enable debug logging
@@ -29,7 +31,7 @@ from typing import Optional, Dict, Any, List
 
 # Version used for auto-sync: when the installed copy in ~/.claude/hooks/
 # detects a newer version in the project directory, it self-updates.
-HOOK_RUNNER_VERSION = "4.4.0"
+HOOK_RUNNER_VERSION = "4.5.0"
 
 # =============================================================================
 # DEBUG LOGGING SYSTEM
@@ -337,6 +339,14 @@ DEFAULT_AUDIO_FILES = {
     "subagent_start": "subagent-start.mp3",
     "teammate_idle": "teammate-idle.mp3",
     "task_completed": "team-task-done.mp3",
+    "stop_failure": "stop-failure.mp3",
+    "postcompact": "post-compact.mp3",
+    "config_change": "config-change.mp3",
+    "instructions_loaded": "instructions-loaded.mp3",
+    "worktree_create": "worktree-create.mp3",
+    "worktree_remove": "worktree-remove.mp3",
+    "elicitation": "elicitation.mp3",
+    "elicitation_result": "elicitation-result.mp3",
 }
 
 # =============================================================================
@@ -417,6 +427,14 @@ CUSTOM_AUDIO_FILES = {
     "subagent_start": "chime-subagent-start.mp3",
     "teammate_idle": "chime-teammate-idle.mp3",
     "task_completed": "chime-team-task-done.mp3",
+    "stop_failure": "chime-stop-failure.mp3",
+    "postcompact": "chime-post-compact.mp3",
+    "config_change": "chime-config-change.mp3",
+    "instructions_loaded": "chime-instructions-loaded.mp3",
+    "worktree_create": "chime-worktree-create.mp3",
+    "worktree_remove": "chime-worktree-remove.mp3",
+    "elicitation": "chime-elicitation.mp3",
+    "elicitation_result": "chime-elicitation-result.mp3",
 }
 
 
@@ -838,6 +856,36 @@ def get_notification_context(hook_type: str, stdin_data: dict) -> str:
     elif hook_type == "task_completed":
         subject = stdin_data.get("task_subject", "")
         return f"Task completed" + (f": {subject[:60]}" if subject else "")
+    elif hook_type == "stop_failure":
+        error = stdin_data.get("error", "unknown")
+        details = stdin_data.get("error_details", "")
+        return f"API error: {error}" + (f" - {details[:60]}" if details else "")
+    elif hook_type == "postcompact":
+        trigger = stdin_data.get("trigger", "")
+        return f"Context compaction complete" + (f" ({trigger})" if trigger else "")
+    elif hook_type == "config_change":
+        source = stdin_data.get("source", "unknown")
+        return f"Configuration changed: {source}"
+    elif hook_type == "instructions_loaded":
+        file_path = stdin_data.get("file_path", "")
+        reason = stdin_data.get("load_reason", "")
+        name = Path(file_path).name if file_path else "unknown"
+        return f"Instructions loaded: {name}" + (f" ({reason})" if reason else "")
+    elif hook_type == "worktree_create":
+        name = stdin_data.get("name", "")
+        return f"Worktree created" + (f": {name}" if name else "")
+    elif hook_type == "worktree_remove":
+        wt_path = stdin_data.get("worktree_path", "")
+        name = Path(wt_path).name if wt_path else ""
+        return f"Worktree removed" + (f": {name}" if name else "")
+    elif hook_type == "elicitation":
+        server = stdin_data.get("mcp_server_name", "unknown")
+        msg = stdin_data.get("message", "")
+        return f"Input requested by {server}" + (f": {msg[:60]}" if msg else "")
+    elif hook_type == "elicitation_result":
+        server = stdin_data.get("mcp_server_name", "unknown")
+        action = stdin_data.get("action", "")
+        return f"Elicitation response: {action}" + (f" ({server})" if server else "")
     return hook_type.replace("_", " ").title()
 
 # =============================================================================

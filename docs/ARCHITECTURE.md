@@ -1,6 +1,6 @@
 # System Architecture
 
-> **Version:** 4.2.0 | **Last Updated:** 2026-02-13
+> **Version:** 4.5.0 | **Last Updated:** 2026-03-22
 
 This document explains the technical architecture of Claude Code Audio Hooks.
 
@@ -86,6 +86,14 @@ Claude Code provides a hooks system that executes commands at specific lifecycle
 | `TeammateIdle` | Teammate goes idle | Notify teammate idle |
 | `TaskCompleted` | Team task completed | Notify task completion |
 | `PreCompact` | Context compaction | Notify memory optimization |
+| `StopFailure` | API error (rate limit, auth, etc.) | Alert user of API failure |
+| `PostCompact` | After compaction completes | Confirm compaction done |
+| `ConfigChange` | Configuration file changed | Notify config update |
+| `InstructionsLoaded` | CLAUDE.md/rules loaded | Notify instructions loaded |
+| `WorktreeCreate` | Worktree created | Notify isolation worktree created |
+| `WorktreeRemove` | Worktree removed | Notify worktree cleanup |
+| `Elicitation` | MCP server requests input | Alert user to respond |
+| `ElicitationResult` | Elicitation response sent | Confirm response submitted |
 
 ### 2. Hook Runner (Python)
 
@@ -107,17 +115,29 @@ sequenceDiagram
     participant UP as user_preferences.json
     participant AP as Audio Player
 
-    CC->>HR: Execute with hook type
+    CC->>HR: Execute with hook type + JSON stdin
+    HR->>HR: Check snooze status
     HR->>PP: Read project path
     PP-->>HR: Return path
     HR->>HR: Normalize path (Git Bash/WSL/Cygwin)
     HR->>UP: Load preferences
-    UP-->>HR: Return enabled hooks
+    UP-->>HR: Return enabled hooks + notification mode
     HR->>HR: Check if hook enabled
-    alt Hook Enabled
-        HR->>HR: Select audio file
-        HR->>AP: Play audio
-        AP-->>HR: Playback complete
+    HR->>HR: Check debounce
+    alt Hook Enabled & Not Snoozed
+        HR->>HR: Determine notification mode (per-hook or global)
+        alt Audio Mode (audio_only or audio_and_notification)
+            HR->>HR: Select audio file (theme-aware)
+            HR->>AP: Play audio
+            AP-->>HR: Playback complete
+        end
+        alt Notification Mode (notification_only or audio_and_notification)
+            HR->>HR: Parse stdin JSON for context
+            HR->>HR: Send desktop notification
+        end
+        alt TTS Enabled
+            HR->>HR: Speak context-aware message
+        end
     end
     HR->>HR: Log trigger event
 ```
@@ -227,7 +247,15 @@ graph LR
     "precompact": false,
     "subagent_start": false,
     "teammate_idle": false,
-    "task_completed": false
+    "task_completed": false,
+    "stop_failure": false,
+    "postcompact": false,
+    "config_change": false,
+    "instructions_loaded": false,
+    "worktree_create": false,
+    "worktree_remove": false,
+    "elicitation": false,
+    "elicitation_result": false
   },
   "audio_settings": {
     "theme": "default",

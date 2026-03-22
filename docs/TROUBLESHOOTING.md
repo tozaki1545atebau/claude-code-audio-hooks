@@ -1,6 +1,6 @@
 # Troubleshooting Guide
 
-> **Version:** 4.2.0 | **Last Updated:** 2026-02-13
+> **Version:** 4.5.0 | **Last Updated:** 2026-03-22
 
 Complete troubleshooting guide for all platforms and common issues.
 

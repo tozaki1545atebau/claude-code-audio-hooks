@@ -5,6 +5,36 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [4.5.0] - 2026-03-22
+
+### Added
+- **8 new hook types** — full coverage of all 22 Claude Code hook events (up from 14):
+  - `StopFailure`: Fires when a turn ends due to an API error (rate limit, auth failure, server error)
+  - `PostCompact`: Fires after context compaction completes
+  - `ConfigChange`: Fires when a configuration file changes during a session
+  - `InstructionsLoaded`: Fires when CLAUDE.md or `.claude/rules/*.md` files are loaded into context
+  - `WorktreeCreate`: Fires when a worktree is created for isolated tasks
+  - `WorktreeRemove`: Fires when a worktree is removed/cleaned up
+  - `Elicitation`: Fires when an MCP server requests user input during a tool call
+  - `ElicitationResult`: Fires after a user responds to an MCP elicitation
+- **16 new audio files** (8 voice + 8 chime) generated via ElevenLabs:
+  - Voice (Jessica): stop-failure.mp3, post-compact.mp3, config-change.mp3, instructions-loaded.mp3, worktree-create.mp3, worktree-remove.mp3, elicitation.mp3, elicitation-result.mp3
+  - Chime: chime-stop-failure.mp3, chime-post-compact.mp3, chime-config-change.mp3, chime-instructions-loaded.mp3, chime-worktree-create.mp3, chime-worktree-remove.mp3, chime-elicitation.mp3, chime-elicitation-result.mp3
+- Context extraction for all 8 new hooks in `get_notification_context()`
+- TTS messages for StopFailure, PostCompact, ConfigChange, and Elicitation hooks
+
+### Changed
+- `hook_runner.py` version bumped to 4.5.0
+- Audio file count per theme: 14 → 22
+- Total hook count: 14 → 22
+- Updated all installer scripts (`install-complete.sh`, `install-windows.ps1`) with new hook registrations
+- Updated `configure.sh` with new hook names, descriptions, and defaults
+- Updated `default_preferences.json` and `user_preferences.json` with new hook entries
+- Updated `CLAUDE.md` hook tables, mermaid diagrams, and version references
+- Updated `README.md` hook count references and added documentation for all 8 new hooks
+
+---
+
 ## [4.4.0] - 2026-03-13
 
 ### Added

@@ -36,7 +36,7 @@ source "$PROJECT_DIR/hooks/shared/hook_config.sh" 2>/dev/null || true
 #=============================================================================
 
 # Hook names array (indexed)
-HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "posttoolusefailure" "userpromptsubmit" "subagent_stop" "subagent_start" "precompact" "session_start" "session_end" "permission_request" "teammate_idle" "task_completed")
+HOOK_NAMES=("notification" "stop" "pretooluse" "posttooluse" "posttoolusefailure" "userpromptsubmit" "subagent_stop" "subagent_start" "precompact" "session_start" "session_end" "permission_request" "teammate_idle" "task_completed" "stop_failure" "postcompact" "config_change" "instructions_loaded" "worktree_create" "worktree_remove" "elicitation" "elicitation_result")
 
 # Parallel arrays for enabled status and descriptions
 HOOK_ENABLED=()
@@ -59,6 +59,14 @@ init_descriptions() {
     HOOK_DESCRIPTIONS[11]="🔐 Permission dialog (CRITICAL)"
     HOOK_DESCRIPTIONS[12]="💤 Teammate idle (Agent Teams)"
     HOOK_DESCRIPTIONS[13]="🏁 Task completed (Agent Teams)"
+    HOOK_DESCRIPTIONS[14]="⛔ API error / stop failure"
+    HOOK_DESCRIPTIONS[15]="📦 After context compaction"
+    HOOK_DESCRIPTIONS[16]="⚙️  Configuration file changed"
+    HOOK_DESCRIPTIONS[17]="📄 Instructions/rules file loaded"
+    HOOK_DESCRIPTIONS[18]="🌳 Worktree created (isolation)"
+    HOOK_DESCRIPTIONS[19]="🧹 Worktree removed (cleanup)"
+    HOOK_DESCRIPTIONS[20]="📝 MCP elicitation (input needed)"
+    HOOK_DESCRIPTIONS[21]="✉️  Elicitation response submitted"
 }
 
 # Get index of hook by name
@@ -118,6 +126,14 @@ init_hooks() {
         HOOK_ENABLED[11]="true"  # permission_request
         HOOK_ENABLED[12]="false" # teammate_idle
         HOOK_ENABLED[13]="false" # task_completed
+        HOOK_ENABLED[14]="false" # stop_failure
+        HOOK_ENABLED[15]="false" # postcompact
+        HOOK_ENABLED[16]="false" # config_change
+        HOOK_ENABLED[17]="false" # instructions_loaded
+        HOOK_ENABLED[18]="false" # worktree_create
+        HOOK_ENABLED[19]="false" # worktree_remove
+        HOOK_ENABLED[20]="false" # elicitation
+        HOOK_ENABLED[21]="false" # elicitation_result
     fi
 }
 

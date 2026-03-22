@@ -482,10 +482,18 @@ try:
         'PostToolUseFailure': 'posttoolusefailure',
         'SubagentStart': 'subagent_start',
         'TeammateIdle': 'teammate_idle',
-        'TaskCompleted': 'task_completed'
+        'TaskCompleted': 'task_completed',
+        'StopFailure': 'stop_failure',
+        'PostCompact': 'postcompact',
+        'ConfigChange': 'config_change',
+        'InstructionsLoaded': 'instructions_loaded',
+        'WorktreeCreate': 'worktree_create',
+        'WorktreeRemove': 'worktree_remove',
+        'Elicitation': 'elicitation',
+        'ElicitationResult': 'elicitation_result'
     }
 
-    hooks_with_matcher = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart']
+    hooks_with_matcher = ['PreToolUse', 'PostToolUse', 'PostToolUseFailure', 'PermissionRequest', 'SubagentStart', 'SubagentStop', 'Notification', 'ConfigChange', 'InstructionsLoaded', 'PreCompact', 'PostCompact', 'SessionStart', 'SessionEnd', 'StopFailure', 'Elicitation', 'ElicitationResult']
     registered = 0
 
     if is_windows:
