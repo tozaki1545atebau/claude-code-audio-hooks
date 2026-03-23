@@ -319,9 +319,15 @@ AUDIO_DIR = PROJECT_DIR / "audio"
 CONFIG_FILE = PROJECT_DIR / "config" / "user_preferences.json"
 QUEUE_DIR = get_safe_temp_dir() / "claude_audio_hooks_queue"
 LOCK_FILE = QUEUE_DIR / "audio.lock"
+_queue_dir_ensured = False
 
-# Ensure queue directory exists
-QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+
+def ensure_queue_dir() -> None:
+    """Ensure queue directory exists (lazy, called on first use)."""
+    global _queue_dir_ensured
+    if not _queue_dir_ensured:
+        QUEUE_DIR.mkdir(parents=True, exist_ok=True)
+        _queue_dir_ensured = True
 
 # Default audio files for each hook type
 DEFAULT_AUDIO_FILES = {
@@ -353,24 +359,34 @@ DEFAULT_AUDIO_FILES = {
 # CONFIGURATION FUNCTIONS
 # =============================================================================
 
+_config_cache: Optional[Dict[str, Any]] = None
+
 def load_config() -> Dict[str, Any]:
-    """Load configuration from user_preferences.json."""
+    """Load configuration from user_preferences.json (cached per invocation)."""
+    global _config_cache
+    if _config_cache is not None:
+        return _config_cache
     if not CONFIG_FILE.exists():
         log_debug(f"Config file not found: {CONFIG_FILE}")
-        return {}
+        _config_cache = {}
+        return _config_cache
     try:
         config = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
         log_debug(f"Loaded config from {CONFIG_FILE}")
+        _config_cache = config
         return config
     except json.JSONDecodeError as e:
         log_error(f"Invalid JSON in config file: {e}")
-        return {}
+        _config_cache = {}
+        return _config_cache
     except PermissionError as e:
         log_error(f"Permission denied reading config: {e}")
-        return {}
+        _config_cache = {}
+        return _config_cache
     except OSError as e:
         log_error(f"OS error reading config: {e}")
-        return {}
+        _config_cache = {}
+        return _config_cache
 
 
 def is_hook_enabled(hook_type: str) -> bool:
@@ -395,6 +411,7 @@ def is_hook_enabled(hook_type: str) -> bool:
 
 def is_snoozed() -> bool:
     """Check if hooks are temporarily snoozed via marker file."""
+    ensure_queue_dir()
     snooze_file = QUEUE_DIR / "snooze_until"
     if not snooze_file.exists():
         return False
@@ -494,6 +511,7 @@ def get_debounce_ms() -> int:
 
 def should_debounce(hook_type: str) -> bool:
     """Check if we should skip this notification due to debounce."""
+    ensure_queue_dir()
     debounce_file = QUEUE_DIR / f"{hook_type}_last_played"
     debounce_sec = get_debounce_ms() / 1000.0
 
@@ -1240,6 +1258,7 @@ def start_focus_flow(hook_type: str, config: Dict[str, Any]) -> None:
         return
 
     min_seconds = ff.get("min_thinking_seconds", 15)
+    ensure_queue_dir()
     marker = QUEUE_DIR / "focus_flow_active"
 
     # Write marker with timestamp
@@ -1277,6 +1296,7 @@ def start_focus_flow(hook_type: str, config: Dict[str, Any]) -> None:
 
 def stop_focus_flow() -> None:
     """Stop any running Focus Flow micro-task when Claude finishes."""
+    ensure_queue_dir()
     marker = QUEUE_DIR / "focus_flow_active"
     pid_file = QUEUE_DIR / "focus_flow_pid"
 
@@ -1347,6 +1367,10 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
         log_trigger(hook_type, "FILTERED")
         return 0
 
+    # Auto-update from project directory if a newer version exists
+    # (deferred to after enabled/snoozed/debounced/filtered checks for performance)
+    check_and_self_update()
+
     # Focus Flow: start micro-task on prompt submit, stop on completion
     if hook_type == "userpromptsubmit":
         start_focus_flow(hook_type, config)
@@ -1391,9 +1415,20 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
     elif mode == "disabled":
         log_trigger(hook_type, "AUDIO_SKIPPED", "mode=disabled")
 
+    # Pre-compute notification context once for all channels that need it
+    tts_settings = config.get("tts_settings", {})
+    tts_enabled = tts_settings.get("enabled", False)
+    webhook_settings = config.get("webhook_settings", {})
+    webhook_enabled = webhook_settings.get("enabled", False)
+    needs_context = (
+        mode in ("notification_only", "audio_and_notification")
+        or tts_enabled
+        or webhook_enabled
+    )
+    context = get_notification_context(hook_type, stdin_data or {}, detail_level) if needs_context else ""
+
     # Desktop notification (unless mode is audio_only or disabled)
     if mode in ("notification_only", "audio_and_notification"):
-        context = get_notification_context(hook_type, stdin_data or {}, detail_level)
         urgency = "critical" if hook_type in ("notification", "permission_request", "posttoolusefailure", "stop_failure", "elicitation") else "normal"
         notif_sent = send_desktop_notification("Claude Code", context, urgency)
         if notif_sent:
@@ -1402,27 +1437,22 @@ def run_hook(hook_type: str, stdin_data: dict = None) -> int:
         log_trigger(hook_type, "NOTIFICATION_SKIPPED", "mode=disabled")
 
     # TTS (text-to-speech)
-    tts_settings = config.get("tts_settings", {})
-    if tts_settings.get("enabled", False):
-        context = get_notification_context(hook_type, stdin_data or {}, detail_level)
+    if tts_enabled:
         custom_messages = tts_settings.get("messages", {})
         tts_message = custom_messages.get(hook_type, context)
         tts_sent = play_tts(tts_message)
         if tts_sent:
             log_debug(f"TTS played for {hook_type}: {tts_message}")
 
-    # Webhook
-    context = get_notification_context(hook_type, stdin_data or {}, detail_level)
-    send_webhook(hook_type, context, stdin_data or {}, config)
+    # Webhook (only if enabled)
+    if webhook_enabled:
+        send_webhook(hook_type, context, stdin_data or {}, config)
 
     return 0
 
 
 def main() -> int:
     """Main entry point."""
-    # Auto-update from project directory if a newer version exists
-    check_and_self_update()
-
     # Check Python version
     if sys.version_info < (3, 6):
         print("Error: Python 3.6 or higher is required", file=sys.stderr)
