@@ -14,10 +14,17 @@ Audio, desktop notifications, and text-to-speech - all platforms.
 
 ## Promotional Video
 
-https://github.com/user-attachments/assets/e314be82-8c88-4026-997e-d25168ac9f5c
+https://github.com/user-attachments/assets/3504d214-efac-4e01-84c0-426430b842d6
 
 > Built entirely with code using Remotion, Claude Code, ElevenLabs & Suno.
 > Source: [claude-code-audio-hooks-promo-video](https://github.com/ChanMeng666/claude-code-audio-hooks-promo-video)
+
+<details>
+<summary>Previous version</summary>
+
+https://github.com/user-attachments/assets/e314be82-8c88-4026-997e-d25168ac9f5c
+
+</details>
 
 ---
 
