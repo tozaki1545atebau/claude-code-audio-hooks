@@ -10,7 +10,6 @@
   "repository": "https://github.com/ChanMeng666/claude-code-audio-hooks",
   "license": "MIT",
   "keywords": ["audio", "notifications", "hooks", "tts", "webhook", "ai-operated", "rate-limits"],
-  "hooks": "./hooks/hooks.json",
   "userConfig": {
     "audio_theme": {
       "type": "string",
