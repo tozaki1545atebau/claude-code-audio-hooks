@@ -2,13 +2,16 @@
 
 # Claude Code Audio Hooks
 
-> **AI-operated audio notification system for Claude Code.** 26 hook events, plugin-native distribution, single JSON CLI, structured NDJSON logs, rate-limit alerts, ElevenLabs voice + chime themes. Claude Code is the operator — humans never touch a config file.
+> **You never type a command. You never edit a config file. You never read a log.**
+> You open Claude Code, say *"install audio hooks"*, and Claude Code does everything else — install the plugin, register the 26 hook events, fetch the audio files, configure your preferences, and verify it works. From then on, you operate the project entirely through natural language: *"snooze for an hour"*, *"switch to chimes"*, *"send notifications to my Slack"*, *"why is there no sound"*. Claude Code translates each request into the right `audio-hooks` subcommand and reports back. **The human is the requester. Claude Code is the operator.**
+
+> **AI-operated audio notification system for Claude Code.** 26 hook events, plugin-native distribution, single JSON CLI, `/audio-hooks` SKILL for natural-language activation, structured NDJSON logs, rate-limit alerts, ElevenLabs voice + chime themes.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-5.0.1-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.1.80%2B-brightgreen.svg)](https://claude.ai/download)
-[![Plugin](https://img.shields.io/badge/install-Claude_Code_plugin-purple.svg)](#install-the-plugin)
+[![Plugin](https://img.shields.io/badge/install-just_talk_to_Claude-purple.svg)](#-the-ai-first-way-just-talk-to-claude-code)
 
 ---
 
@@ -42,16 +45,133 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the full v5.0 / v5.0.1 entries.
 
 ---
 
-## Install the plugin
+## 🤖 The AI-first way (just talk to Claude Code)
 
-This is the **recommended path**. Inside Claude Code, run two slash commands:
+**You don't need to type any of the commands in this README.** They're shown for completeness, but the recommended way to operate this project is to **paste a natural-language prompt into Claude Code and let it do the work.**
+
+This is the project's defining selling point: every operation — install, configure, snooze, switch themes, set up webhooks, troubleshoot, uninstall — can be triggered by a single sentence in plain English. Claude Code reads the `/audio-hooks` SKILL bundled with the plugin, picks the right `audio-hooks` subcommand, runs it via its Bash tool, and reports the result. You never see a slash command unless you want to.
+
+### How the conversation works
+
+```mermaid
+sequenceDiagram
+    participant Human
+    participant Terminal
+    participant Claude as Claude Code
+    participant Skill as /audio-hooks SKILL
+    participant CLI as audio-hooks CLI
+    participant Plugin as Plugin runtime
+
+    Human->>Terminal: type `claude` to start a session
+    Human->>Claude: "install the audio-hooks plugin from<br/>github.com/ChanMeng666/claude-code-audio-hooks,<br/>then verify it and switch to chime audio"
+    Claude->>Plugin: /plugin marketplace add ChanMeng666/claude-code-audio-hooks
+    Claude->>Plugin: /plugin install audio-hooks@chanmeng-audio-hooks
+    Claude->>Plugin: /reload-plugins
+    Claude->>CLI: audio-hooks diagnose (via Bash tool)
+    CLI-->>Claude: {"ok":true, "errors":[], ...}
+    Claude->>Skill: SKILL auto-loaded by reload-plugins
+    Claude->>CLI: audio-hooks theme set custom
+    CLI-->>Claude: {"ok":true,"theme":"custom"}
+    Claude-->>Human: "Done. Plugin installed, 26 hooks active,<br/>audio theme set to chimes. Try asking me anything."
+    Human->>Claude: "snooze audio for an hour"
+    Claude->>Skill: activates on "snooze" intent
+    Skill->>CLI: audio-hooks snooze 1h
+    CLI-->>Claude: {"ok":true,"active":true,"remaining_seconds":3600}
+    Claude-->>Human: "Audio snoozed for 1 hour."
+
+    Note over Human,Plugin: Human only ever types natural language.<br/>Zero commands, zero config files, zero log reading.
+```
+
+### Step 0 — open Claude Code
+
+In any terminal (PowerShell, bash, zsh, Windows Terminal, iTerm2, anything):
+
+```bash
+claude
+```
+
+That's the only command **you** ever type in this whole guide. Everything from here on is natural-language messages to Claude Code.
+
+### Step 1 — install with one sentence
+
+Paste this into Claude Code:
+
+> **Please install the claude-code-audio-hooks plugin from `github.com/ChanMeng666/claude-code-audio-hooks`. Add the marketplace, install the plugin, run `/reload-plugins` to activate it, then run `audio-hooks diagnose` and `audio-hooks test all` to verify everything works. Tell me when it's ready.**
+
+Claude Code will:
+
+1. Run `/plugin marketplace add ChanMeng666/claude-code-audio-hooks`
+2. Run `/plugin install audio-hooks@chanmeng-audio-hooks`
+3. Run `/reload-plugins`
+4. Run `audio-hooks diagnose` (returns JSON; Claude reads it)
+5. Run `audio-hooks test all` (plays every enabled hook's audio)
+6. Report back in plain English: *"Done. v5.0.1 installed, 26 hooks active, all 26 audio files present, no errors."*
+
+You don't need to clone the repo. You don't need to run any bash command. You don't need to know what a slash command is. Claude Code's plugin system fetches everything from GitHub on its own.
+
+### Step 2 — configure with one sentence
+
+Once installed, you operate the project the same way. Pick the prompt that matches what you want:
+
+| You want to... | Paste this into Claude Code |
+|---|---|
+| **Switch to chime audio** (non-voice) | *"Switch audio-hooks to the chime theme."* |
+| **Switch to voice** (ElevenLabs Jessica) | *"Switch audio-hooks to the voice theme."* |
+| **Be quiet for 30 minutes** | *"Snooze audio for 30 minutes."* |
+| **Be quiet for the rest of the day** | *"Snooze audio for 8 hours."* |
+| **Resume audio** | *"Unmute audio."* |
+| **Only get critical alerts** (no chatty hooks) | *"Configure audio-hooks to only fire on stop, notification, and permission_request — disable everything else."* |
+| **Send alerts to my Slack** | *"Send audio-hooks alerts to my Slack webhook at `https://hooks.slack.com/services/...` and run a test to make sure it works."* |
+| **Send alerts to ntfy** | *"Configure audio-hooks to send alerts to `https://ntfy.sh/my-claude-channel` in ntfy format. Test it."* |
+| **Speak Claude's actual reply when done** | *"Enable audio-hooks TTS and have it speak Claude's actual final message instead of a generic announcement."* |
+| **Get a warning when I'm running low on quota** | *"Make sure audio-hooks rate-limit alerts are enabled with 80% and 95% thresholds for both 5-hour and 7-day windows."* |
+| **Watch my .env file for changes** | *"Enable the audio-hooks file_changed hook and configure it to watch `.env` and `.envrc`."* |
+| **Test that audio is working** | *"Test all my audio-hooks hooks and tell me if any failed."* |
+| **Show me a status snapshot** | *"What's the current state of audio-hooks? Show me which hooks are enabled, the theme, and any recent errors."* |
+| **Add a status line at the bottom** | *"Install the audio-hooks status line in my Claude Code settings."* |
+
+Each prompt is one message. Claude Code parses it, picks the right `audio-hooks` subcommand(s), runs them, and reports back. You don't memorise anything.
+
+### Step 3 — troubleshoot with one sentence
+
+If you ever stop hearing audio, paste this:
+
+> **Audio-hooks isn't playing sounds. Run `audio-hooks diagnose` and `audio-hooks logs tail --level error --n 20`, then fix whatever it reports.**
+
+Claude Code will run the diagnose command, parse the JSON errors (each one carries a `suggested_command` field), run the suggested fixes in order, and report what it fixed.
+
+### Step 4 — uninstall with one sentence
+
+> **Please uninstall audio-hooks completely.**
+
+Claude Code runs `/plugin uninstall audio-hooks@chanmeng-audio-hooks`.
+
+### Why this matters
+
+Most CLI tools force the human to learn the tool. This project inverts the contract: **the tool is designed to be learned by Claude Code, not by humans.** The entire surface area is documented in `audio-hooks manifest` (one JSON document), the SKILL teaches Claude Code how to map natural language to that surface, and every error event includes a `suggested_command` Claude Code can execute autonomously. The human's job is to say what they want; Claude Code's job is to make it happen.
+
+This is what "AI-first" means in practice: not "AI-assisted", not "AI-friendly", but **AI-operated**. The human is upstream of Claude Code, not downstream of the CLI.
+
+---
+
+## Install the plugin (manual reference)
+
+> ⚠ **You almost certainly don't need to read this section.** The natural-language prompts in [The AI-first way](#-the-ai-first-way-just-talk-to-claude-code) above already cover install, configure, troubleshoot, and uninstall. This section is for people who want to know what Claude Code is doing internally on their behalf, or who are operating the project from a script / CI.
+
+The plugin install is two slash commands inside Claude Code:
 
 ```text
 /plugin marketplace add ChanMeng666/claude-code-audio-hooks
 /plugin install audio-hooks@chanmeng-audio-hooks
 ```
 
-Then verify and smoke-test:
+After install, reload plugins so the new hooks take effect:
+
+```text
+/reload-plugins
+```
+
+Verify and smoke-test:
 
 ```text
 > run audio-hooks status
@@ -60,17 +180,7 @@ Then verify and smoke-test:
 
 **That's it.** All 26 hook events are registered, every audio file is bundled, and `${CLAUDE_PLUGIN_DATA}/user_preferences.json` is auto-initialised from the default template on first read.
 
-To switch the audio theme:
-
-```text
-> switch audio to chimes      # the SKILL activates and runs `audio-hooks theme set custom`
-```
-
-To snooze for an hour:
-
-```text
-> snooze audio for 1 hour     # the SKILL runs `audio-hooks snooze 1h`
-```
+You don't need to clone the repo manually — Claude Code's plugin system fetches the marketplace.json from `github.com/ChanMeng666/claude-code-audio-hooks` and clones the plugin source into its own plugin cache (`~/.claude/plugins/cache/audio-hooks-chanmeng-audio-hooks/`).
 
 To uninstall:
 
@@ -80,7 +190,7 @@ To uninstall:
 
 ### Alternative: legacy script install
 
-The pre-v5.0 install path still works for users who'd rather not use the plugin system:
+The pre-v5.0 install path still works for users who'd rather not use the plugin system, or for environments where the plugin system isn't available (CI, headless servers, scripted deployments):
 
 ```bash
 git clone https://github.com/ChanMeng666/claude-code-audio-hooks.git
@@ -672,18 +782,26 @@ When in doubt, **run `audio-hooks manifest`** instead of reading docs. The manif
 
 ## Design philosophy
 
-This project is designed for **Claude Code as the operator**, not a human user. The constraints follow:
+This project is **AI-operated**, not AI-assisted. The contract is inverted from a typical CLI tool:
 
-1. **No interactive CLI prompts.** Every script auto-engages non-interactive mode on non-TTY or when `CLAUDE_NONINTERACTIVE=1` is set.
-2. **No human-readable error logs.** All logs are NDJSON with stable error codes and machine-actionable hints.
-3. **No GUI consoles.**
-4. **No 2FA / CAPTCHA gates** anywhere in the install or operate path.
-5. **Every config knob is settable in one shot** via `audio-hooks set` or a typed setter.
-6. **Every state read returns a single JSON document** in <100ms.
-7. **All documentation that Claude Code reads is self-contained, structured, and current.** `CLAUDE.md` is the canonical AI doc; this README is the public face.
-8. **Single monolith, one repo, one codebase.** No microservices, no multi-repo. The plugin lives inside the same repo as a subdirectory.
+> A typical CLI: the human learns the tool, types commands, reads logs.
+> **claude-code-audio-hooks**: the human says what they want, Claude Code learns the tool and does the work.
 
-The natural-language operating model: a human says *"install audio hooks for me"* or *"snooze audio for an hour"* and Claude Code does everything. The human never opens a config file, never reads a log, never picks a menu option.
+The human is **upstream** of Claude Code. The CLI surface, the SKILL, the NDJSON logs, the stable error codes — none of it is designed for a human to read. It's all designed for Claude Code to read, operate, and report back to the human in plain English. The human's only job is to be specific about what they want.
+
+**Concrete constraints that follow:**
+
+1. **No interactive CLI prompts.** Every script auto-engages non-interactive mode on non-TTY or when `CLAUDE_NONINTERACTIVE=1` is set. If Claude Code can't be confronted with a `[y/N]`, neither can the human via Claude Code.
+2. **No human-readable error logs.** All logs are NDJSON (`audio-hooks.v1` schema) with stable `code` enums and machine-actionable `hint` + `suggested_command` fields. Claude Code parses them; the human gets a one-sentence summary.
+3. **No GUI consoles.** A GUI would force a human into the loop.
+4. **No 2FA / CAPTCHA gates** anywhere in the install or operate path. They break automation.
+5. **Every config knob is settable in one shot** via `audio-hooks set` or a typed setter. Claude Code can configure anything in a single Bash tool call.
+6. **Every state read returns a single JSON document** in <100ms. Claude Code can introspect the entire project surface in one round-trip.
+7. **`audio-hooks manifest` is the canonical introspection target.** Claude Code reads it once and knows every subcommand, every config key, every hook, every audio file, every error code, every env var. The SKILL's golden rule is: *if you're unsure of the project's current state, run `audio-hooks manifest` first*.
+8. **The `/audio-hooks` SKILL bridges natural language to the CLI.** Trigger phrases like *"snooze audio"*, *"why is there no sound"*, *"send notifications to Slack"* activate the SKILL, which loads a structured prose-and-table guide telling Claude Code exactly which subcommand to run for any user request.
+9. **Single monolith, one repo, one codebase.** No microservices, no multi-repo. The plugin lives inside the same repo as a subdirectory. Claude Code can understand the entire project end-to-end in a single context window.
+
+The natural-language operating model: a human says *"install audio hooks for me"* or *"snooze audio for an hour"* or *"figure out why I'm not hearing anything"* — and Claude Code does everything. The human never opens a config file, never reads a log, never picks a menu option, never types a slash command. The human types **one sentence**; Claude Code handles the rest.
 
 ---
 
