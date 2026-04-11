@@ -17,6 +17,11 @@ Thumbs.db
 # Claude Code personal settings
 .claude/
 
+# Plugin runtime config — should never live in the plugin source tree.
+# Plugin installs put user_preferences.json under
+# ~/.claude/plugins/data/audio-hooks-chanmeng-audio-hooks/ instead.
+plugins/audio-hooks/config/user_preferences.json
+
 # Logs
 logs/
 *.log

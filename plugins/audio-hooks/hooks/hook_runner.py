@@ -481,28 +481,91 @@ PROJECT_DIR = get_project_dir()
 AUDIO_DIR = PROJECT_DIR / "audio"
 
 
+def _is_running_from_plugin() -> bool:
+    """True if this script is being invoked from a plugin install context.
+
+    Two signals:
+      1. CLAUDE_PLUGIN_DATA is set (hook fire context — Claude Code injects it).
+      2. This file lives under <plugin_root>/hooks/ where
+         <plugin_root>/.claude-plugin/plugin.json exists.
+    """
+    if os.environ.get("CLAUDE_PLUGIN_DATA"):
+        return True
+    try:
+        here = Path(__file__).resolve()
+        plugin_root = here.parent.parent  # hooks/hook_runner.py -> plugin root
+        if (plugin_root / ".claude-plugin" / "plugin.json").exists():
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _resolve_plugin_data_dir() -> Path:
+    """Compute the plugin data dir even when CLAUDE_PLUGIN_DATA isn't set.
+
+    Per Claude Code docs, the data dir is at ~/.claude/plugins/data/{id}/
+    where {id} is the plugin name with non-[a-zA-Z0-9_-] chars replaced by -.
+    For audio-hooks@chanmeng-audio-hooks the id is
+    'audio-hooks-chanmeng-audio-hooks'.
+
+    Used when the binary is invoked from a Bash tool call via the plugin's
+    bin/ PATH (which doesn't inherit CLAUDE_PLUGIN_DATA from the hook fire
+    context).
+    """
+    home = Path.home()
+    data_root = home / ".claude" / "plugins" / "data"
+    canonical = data_root / "audio-hooks-chanmeng-audio-hooks"
+    if canonical.exists():
+        return canonical
+    if data_root.exists():
+        try:
+            for child in data_root.iterdir():
+                if child.is_dir() and "audio-hooks" in child.name:
+                    return child
+        except OSError:
+            pass
+    # No data dir yet — return canonical so it can be created on first write
+    return canonical
+
+
+def _auto_init_user_prefs(target: Path) -> None:
+    """Copy default_preferences.json into target if target doesn't exist."""
+    if target.exists():
+        return
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        template = PROJECT_DIR / "config" / "default_preferences.json"
+        if template.exists():
+            import shutil as _sh
+            _sh.copy2(str(template), str(target))
+    except OSError:
+        pass
+
+
 def _resolve_config_file() -> Path:
     """Resolve user_preferences.json path.
 
-    Plugin installs: ${CLAUDE_PLUGIN_DATA}/user_preferences.json (writable,
-    survives plugin updates). On first read the runner copies the plugin's
-    bundled default_preferences.json into place if the file doesn't exist.
+    Resolution order:
+      1. CLAUDE_PLUGIN_DATA env var (set by Claude Code in hook fire context)
+      2. Plugin context detected from script path (CLI invocation via plugin bin/)
+      3. CLAUDE_AUDIO_HOOKS_DATA explicit override
+      4. Legacy <project_dir>/config/user_preferences.json (script install)
 
-    Script installs: legacy <project_dir>/config/user_preferences.json.
+    For plugin contexts, the file is auto-initialized from
+    default_preferences.json on first read.
     """
     plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
     if plugin_data:
         target = Path(plugin_data) / "user_preferences.json"
-        if not target.exists():
-            try:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                template = PROJECT_DIR / "config" / "default_preferences.json"
-                if template.exists():
-                    import shutil as _sh
-                    _sh.copy2(str(template), str(target))
-            except OSError:
-                pass
+        _auto_init_user_prefs(target)
         return target
+
+    if _is_running_from_plugin():
+        target = _resolve_plugin_data_dir() / "user_preferences.json"
+        _auto_init_user_prefs(target)
+        return target
+
     explicit = os.environ.get("CLAUDE_AUDIO_HOOKS_DATA")
     if explicit:
         return Path(explicit) / "user_preferences.json"

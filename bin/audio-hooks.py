@@ -229,25 +229,74 @@ def _redact_url(url: str) -> str:
     return out
 
 
+def _is_running_from_plugin() -> bool:
+    """True if this CLI is invoked from a plugin install context."""
+    if os.environ.get("CLAUDE_PLUGIN_DATA"):
+        return True
+    try:
+        here = Path(__file__).resolve()
+        # bin/audio-hooks.py -> plugin root is parent.parent
+        plugin_root = here.parent.parent
+        if (plugin_root / ".claude-plugin" / "plugin.json").exists():
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def _resolve_plugin_data_dir() -> Path:
+    """Compute the plugin data dir even when CLAUDE_PLUGIN_DATA isn't set."""
+    home = Path.home()
+    data_root = home / ".claude" / "plugins" / "data"
+    canonical = data_root / "audio-hooks-chanmeng-audio-hooks"
+    if canonical.exists():
+        return canonical
+    if data_root.exists():
+        try:
+            for child in data_root.iterdir():
+                if child.is_dir() and "audio-hooks" in child.name:
+                    return child
+        except OSError:
+            pass
+    return canonical
+
+
+def _auto_init_user_prefs(target: Path) -> None:
+    """Copy default_preferences.json into target if target doesn't exist."""
+    if target.exists():
+        return
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        template = PROJECT_ROOT / "config" / "default_preferences.json"
+        if template.exists():
+            import shutil as _sh
+            _sh.copy2(str(template), str(target))
+    except OSError:
+        pass
+
+
 def _config_path() -> Path:
     """Resolve user_preferences.json path.
 
-    Plugin install: ${CLAUDE_PLUGIN_DATA}/user_preferences.json (writable).
-    Script install: <project_dir>/config/user_preferences.json (legacy).
+    Resolution order:
+      1. CLAUDE_PLUGIN_DATA env var (hook fire context).
+      2. Plugin context detected from script path (CLI via plugin bin/).
+      3. CLAUDE_AUDIO_HOOKS_DATA explicit override.
+      4. Legacy <project_dir>/config/user_preferences.json (script install).
+
+    Plugin contexts auto-init from default_preferences.json on first read.
     """
     plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
     if plugin_data:
         target = Path(plugin_data) / "user_preferences.json"
-        if not target.exists():
-            try:
-                target.parent.mkdir(parents=True, exist_ok=True)
-                template = PROJECT_ROOT / "config" / "default_preferences.json"
-                if template.exists():
-                    import shutil as _sh
-                    _sh.copy2(str(template), str(target))
-            except OSError:
-                pass
+        _auto_init_user_prefs(target)
         return target
+
+    if _is_running_from_plugin():
+        target = _resolve_plugin_data_dir() / "user_preferences.json"
+        _auto_init_user_prefs(target)
+        return target
+
     explicit = os.environ.get("CLAUDE_AUDIO_HOOKS_DATA")
     if explicit:
         return Path(explicit) / "user_preferences.json"
@@ -431,11 +480,16 @@ def cmd_status(_args: List[str]) -> int:
     rl = cfg.get("rate_limit_alerts", {}) or {}
     install = _detect_install_mode()
 
+    # Resolve the effective plugin data dir even when CLAUDE_PLUGIN_DATA isn't set
+    plugin_data_dir = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if not plugin_data_dir and _is_running_from_plugin():
+        plugin_data_dir = str(_resolve_plugin_data_dir())
+
     emit({
         "ok": True,
         "version": PROJECT_VERSION,
         "project_dir": str(PROJECT_ROOT),
-        "plugin_data_dir": os.environ.get("CLAUDE_PLUGIN_DATA"),
+        "plugin_data_dir": plugin_data_dir,
         "queue_dir": str(_queue_dir()),
         "log_dir": str(HR.get_log_dir()) if HR else None,
         "theme": cfg.get("audio_theme", "default"),
@@ -880,6 +934,7 @@ def cmd_diagnose(_args: List[str]) -> int:
     warnings: List[Dict[str, Any]] = []
 
     settings = _check_settings_json()
+    install = _detect_install_mode()
     if settings.get("disable_all_hooks"):
         errors.append({
             "code": "SETTINGS_DISABLE_ALL_HOOKS",
@@ -887,10 +942,17 @@ def cmd_diagnose(_args: List[str]) -> int:
             "hint": "Remove or set disableAllHooks: false in ~/.claude/settings.json.",
             "suggested_command": "audio-hooks status",
         })
-    if settings.get("exists") and not settings.get("hooks_registered"):
+    # Only warn HOOKS_NOT_REGISTERED when neither install path is active.
+    # Plugin installs register their hooks in the plugin's own hooks/hooks.json,
+    # not in ~/.claude/settings.json — so an absent settings.json `hooks` key
+    # is normal and expected when only the plugin is installed.
+    if (settings.get("exists")
+            and not settings.get("hooks_registered")
+            and not install.get("plugin_install")
+            and not install.get("script_install")):
         warnings.append({
             "code": "HOOKS_NOT_REGISTERED",
-            "message": "No hooks block found in ~/.claude/settings.json.",
+            "message": "No hooks block found in ~/.claude/settings.json and no plugin install detected.",
             "suggested_command": "audio-hooks install --plugin",
         })
 
@@ -921,7 +983,6 @@ def cmd_diagnose(_args: List[str]) -> int:
             "suggested_command": "audio-hooks manifest --schema",
         })
 
-    install = _detect_install_mode()
     if install.get("warning", {}).get("code") == "DUAL_INSTALL_DETECTED":
         errors.append({
             "code": "DUAL_INSTALL_DETECTED",
