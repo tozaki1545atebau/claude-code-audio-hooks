@@ -13,20 +13,24 @@
   "hooks": "./hooks/hooks.json",
   "userConfig": {
     "audio_theme": {
-      "description": "Audio theme: 'default' (voice) or 'custom' (chimes). Default: custom.",
-      "sensitive": false
+      "type": "string",
+      "title": "Audio theme",
+      "description": "Audio theme: 'default' (voice recordings) or 'custom' (non-voice chimes). Leave blank for default."
     },
     "webhook_url": {
-      "description": "Optional webhook URL (Slack/Discord/Teams/ntfy/raw). Leave blank to skip.",
-      "sensitive": false
+      "type": "string",
+      "title": "Webhook URL (optional)",
+      "description": "Optional webhook URL for Slack/Discord/Teams/ntfy/raw notifications. Leave blank to skip."
     },
     "webhook_format": {
-      "description": "Optional webhook format: slack | discord | teams | ntfy | raw.",
-      "sensitive": false
+      "type": "string",
+      "title": "Webhook format",
+      "description": "Webhook payload format: slack | discord | teams | ntfy | raw. Required when webhook_url is set."
     },
     "tts_enabled": {
-      "description": "Enable TTS announcements. true | false. Default: false.",
-      "sensitive": false
+      "type": "boolean",
+      "title": "Enable text-to-speech",
+      "description": "Speak hook events using the system TTS engine. Default: false."
     }
   }
 }
