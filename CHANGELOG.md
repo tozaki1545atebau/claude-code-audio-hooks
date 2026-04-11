@@ -5,6 +5,42 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.2] - 2026-04-11
+
+The first end-to-end install of v5.0.1 on a real Claude Code v2.1.101 session surfaced five real bugs that were invisible from outside an actual install. v5.0.2 fixes all of them and rewrites the public README + docs to lead with the project's defining selling point: **users never type a command, they just talk to Claude Code in natural language**.
+
+### Fixed
+
+- **`userConfig` schema rejected by `claude plugin validate`** ([fefe2c9](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/fefe2c9)). The v5.0.1 plugin manifest used `description`+`sensitive` fields per my earlier read of the docs; the validator actually requires `type` (one of `string|number|boolean|directory|file`) plus `title`. Without this fix the plugin failed to install with 8 schema errors. Verified clean with `claude plugin validate plugins/audio-hooks`.
+- **"Plugin not found in any marketplace"** ([c3d5809](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/c3d5809)). The marketplace.json combined `metadata.pluginRoot: ./plugins` with `source: ./audio-hooks` — the leading `./` on the source path conflicted with the pluginRoot prefix and the plugin resolver couldn't find the plugin entry. Drop pluginRoot and use the explicit relative path `./plugins/audio-hooks` instead.
+- **"Duplicate hooks file detected" load error** ([1537fff](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/1537fff)). Claude Code's plugin loader auto-discovers `hooks/hooks.json` from the standard location; declaring `"hooks": "./hooks/hooks.json"` in the manifest causes a duplicate-load error after install. Drop the redundant field — auto-discovery handles it.
+- **`audio-hooks` exits 49 silently from Git Bash on Windows** ([cdea32b](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/cdea32b)). Root cause: the binary was a Python file with `#!/usr/bin/env python3` shebang, but Git Bash on Windows resolves `python3` to a Microsoft Store stub at `WindowsApps\python3.exe` — a placeholder that exits 49 silently when invoked (it's meant to open the Store to install Python). Fix: rename `bin/audio-hooks` → `bin/audio-hooks.py` and replace `bin/audio-hooks` with a portable bash wrapper that probes each Python candidate (`python3`, `python`, `py`) with a `-c "import sys"` test and only exec's the first one that returns 0. The Microsoft Store stub fails the test and is correctly skipped. Same treatment for `bin/audio-hooks-statusline`. Updated `.cmd` shims to invoke the `.py` files directly.
+- **Plugin context not detected when `CLAUDE_PLUGIN_DATA` isn't set** ([2c8595f](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/2c8595f)). When `audio-hooks` is invoked from the plugin's `bin/` PATH via Claude Code's Bash tool (not from inside a hook fire), `CLAUDE_PLUGIN_DATA` is not in the environment. The previous `_config_path()` fell back to `<plugin_dir>/config/user_preferences.json` — a path inside the plugin source tree that gets overwritten on plugin updates and isn't where the plugin data dir lives. Symptoms: `audio-hooks diagnose` reported `INVALID_CONFIG`, `audio-hooks theme set custom` wrote into the wrong directory, and `audio-hooks diagnose` warned `HOOKS_NOT_REGISTERED` for a healthy plugin install. Fix: new helpers `_is_running_from_plugin()` (detects plugin context by looking for `<script_parent>/.claude-plugin/plugin.json`) and `_resolve_plugin_data_dir()` (computes `~/.claude/plugins/data/audio-hooks-chanmeng-audio-hooks/`). `_config_path()` now checks plugin-context detection in addition to the env var. `_check_settings_json()` and `cmd_diagnose` only emit `HOOKS_NOT_REGISTERED` when neither install path is detected — plugin installs register hooks in the plugin's own `hooks/hooks.json`, not in `~/.claude/settings.json`.
+
+### Added
+
+- **Dual-install detection**. `audio-hooks diagnose` now parses `~/.claude/plugins/installed_plugins.json` and the plugin cache to detect plugin installs reliably. When both the legacy script install AND the plugin install are active, diagnose reports a `DUAL_INSTALL_DETECTED` error with `bash scripts/uninstall.sh --yes` as the suggested fix. This addresses the "double audio" symptom where users hear both voice and chime overlapping because both install paths fire on every event.
+
+### Documentation
+
+- **README.md rewritten end-to-end** ([69f4e29](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/69f4e29) + [ddb98d5](https://github.com/ChanMeng666/claude-code-audio-hooks/commit/ddb98d5)). The previous README was 2249 lines of v4.7.0-era walkthroughs. The new README is 834 lines and leads with **"🤖 The AI-first way (just talk to Claude Code)"** as the top section after the v5.0 highlights. It contains:
+  - A prominent new tagline: *"You never type a command. You never edit a config file. You never read a log."*
+  - A complete 4-step ready-to-paste prompt journey (open Claude Code → install → configure → troubleshoot → uninstall), each step requiring exactly one English sentence from the human.
+  - A 13-row "you say / paste this" table covering theme, snooze, enable-only, Slack/ntfy webhooks, TTS speak_assistant_message, rate-limit alerts, file_changed watch, test, status, statusline.
+  - A mermaid sequence diagram of a real Human ↔ Claude Code ↔ SKILL ↔ CLI conversation showing every internal step Claude Code runs on the human's behalf.
+  - The existing slash-command install reference renamed "Install the plugin (manual reference)" with a prominent warning: *"You almost certainly don't need to read this section."*
+  - 5 mermaid diagrams total (high-level event flow, AI control surface, hook lifecycle, plugin layout, conversation sequence).
+
+- **`docs/ARCHITECTURE.md` rewritten** for v5.0.2 reality. Component-by-component breakdown of `hook_runner.py`, `bin/audio-hooks`, plugin layout, status line, scripts. Hook event lifecycle as a sequence diagram. Path resolution flowchart (4 resolution paths). NDJSON schema + stable error code enum. Build pipeline. Recipes for adding new hooks and audio. **5 mermaid diagrams.**
+
+- **`docs/INSTALLATION_GUIDE.md` and `docs/TROUBLESHOOTING.md` collapsed** to focused pointers. The v5.0 install is two slash commands and v5.0 troubleshooting is one `audio-hooks diagnose` invocation, so the legacy 900+ lines of walkthroughs were net negative. INSTALLATION_GUIDE is now 86 lines covering the three install paths; TROUBLESHOOTING is 135 lines that's mostly a stable error code table + per-symptom decision tree, all anchored to `audio-hooks` subcommands.
+
+- **Total docs change**: −2198 lines net (from 3579 to 1381 across the four primary docs), 10 mermaid diagrams across `README.md` / `CLAUDE.md` / `docs/ARCHITECTURE.md`, every command example uses the `audio-hooks` CLI, every version reference is consistent at 5.0.2.
+
+### Changed
+
+- Project version bumped 5.0.1 → 5.0.2 across `hook_runner.py`, `bin/audio-hooks.py`, `marketplace.json`, `plugin.json`, `default_preferences.json`, `README.md`, `CLAUDE.md`.
+
 ## [5.0.1] - 2026-04-11
 
 ### Added
