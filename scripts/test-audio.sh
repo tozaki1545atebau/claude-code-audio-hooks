@@ -2,6 +2,15 @@
 # Claude Code Audio Hooks - Enhanced Audio Test Script v2.0
 # Tests all audio files and provides diagnostics
 # Compatible with bash 3.2+ (macOS default)
+#
+# v5.0: This is a human-only interactive menu. AI agents and CI should use
+# `audio-hooks test all` instead, which returns structured JSON results.
+
+# AI-first guard: redirect non-TTY callers to the audio-hooks CLI.
+if [ ! -t 0 ] || [ -n "${CLAUDE_NONINTERACTIVE:-}" ]; then
+    printf '{"ok":false,"error":{"code":"INTERACTIVE_SCRIPT","message":"test-audio.sh is a human-only menu. Use the audio-hooks CLI instead.","suggested_command":"audio-hooks test all"}}\n'
+    exit 0
+fi
 
 # Bash version compatibility notice
 if [ "${BASH_VERSION%%.*}" -eq 3 ]; then

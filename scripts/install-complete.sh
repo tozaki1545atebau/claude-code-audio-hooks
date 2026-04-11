@@ -25,8 +25,14 @@ else
 fi
 LOG_FILE="$LOG_DIR/claude_hooks_install_$(date +%Y%m%d_%H%M%S).log"
 
-# Non-interactive mode flag (can be set via --yes or --no-prompt)
-NON_INTERACTIVE=false
+# Non-interactive mode flag.
+# Auto-engages when stdin is not a TTY (piped install, AI agent, CI) or when
+# CLAUDE_NONINTERACTIVE=1 is set. Can also be forced via --yes / --no-prompt.
+if [ ! -t 0 ] || [ -n "${CLAUDE_NONINTERACTIVE:-}" ]; then
+    NON_INTERACTIVE=true
+else
+    NON_INTERACTIVE=false
+fi
 
 # Colors
 RED='\033[0;31m'

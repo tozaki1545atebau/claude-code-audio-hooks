@@ -1,0 +1,208 @@
+#!/usr/bin/env python3
+"""audio-hooks-statusline — Claude Code status line script.
+
+Reads the JSON session document Claude Code pipes to stdin and prints two
+lines to stdout:
+
+  Line 1 (always): [Model] 🔊 audio-hooks vX.Y | N hooks | webhook: fmt | theme: name
+  Line 2 (conditional): [SNOOZED Xm] [FOCUS: mode] 🌿 branch  rate-limit bar
+
+Reads `audio-hooks status` once per (session_id, 5s) and caches it under
+${CLAUDE_PLUGIN_DATA}/statusline.cache.<session_id>. Designed to be set
+in ~/.claude/settings.json with refreshInterval: 60 so snooze countdowns
+and rate-limit bars update during idle periods.
+
+Hard rules:
+  - No interactive prompts.
+  - All errors degrade gracefully (silent fallback to a single line).
+  - Output is plain text (with optional ANSI colors) — never JSON.
+  - Maximum two lines, no trailing newline noise.
+"""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+from pathlib import Path
+from typing import Any, Dict, Optional
+
+# ANSI color codes (degrade silently on terminals that don't support them)
+GREEN = "\033[32m"
+YELLOW = "\033[33m"
+RED = "\033[31m"
+CYAN = "\033[36m"
+DIM = "\033[2m"
+RESET = "\033[0m"
+
+CACHE_TTL_SEC = 5
+
+
+def _read_session_input() -> Dict[str, Any]:
+    """Read the JSON session document Claude Code pipes to stdin."""
+    try:
+        raw = sys.stdin.read()
+        if raw.strip():
+            return json.loads(raw)
+    except (json.JSONDecodeError, OSError):
+        pass
+    return {}
+
+
+def _resolve_audio_hooks_binary() -> Optional[Path]:
+    """Find the audio-hooks binary alongside this script."""
+    here = Path(__file__).resolve().parent
+    for candidate in [here / "audio-hooks", here / "audio-hooks.py"]:
+        if candidate.exists():
+            return candidate
+    on_path = shutil.which("audio-hooks")
+    if on_path:
+        return Path(on_path)
+    return None
+
+
+def _state_dir() -> Path:
+    """Resolve a writable state directory for the cache file."""
+    plugin_data = os.environ.get("CLAUDE_PLUGIN_DATA")
+    if plugin_data:
+        d = Path(plugin_data)
+    else:
+        explicit = os.environ.get("CLAUDE_AUDIO_HOOKS_DATA")
+        if explicit:
+            d = Path(explicit)
+        else:
+            base = os.environ.get("TEMP") or os.environ.get("TMP") or "/tmp"
+            d = Path(base) / "claude_audio_hooks_queue"
+    try:
+        d.mkdir(parents=True, exist_ok=True)
+    except OSError:
+        pass
+    return d
+
+
+def _get_status(session_id: str) -> Dict[str, Any]:
+    """Return cached `audio-hooks status` JSON, refreshing every CACHE_TTL_SEC."""
+    cache_file = _state_dir() / f"statusline.cache.{session_id or 'default'}"
+    now = time.time()
+    if cache_file.exists():
+        try:
+            mtime = cache_file.stat().st_mtime
+            if now - mtime < CACHE_TTL_SEC:
+                return json.loads(cache_file.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            pass
+
+    binary = _resolve_audio_hooks_binary()
+    if binary is None:
+        return {}
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(binary), "status"],
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            timeout=3,
+        )
+        if proc.returncode != 0 or not proc.stdout.strip():
+            return {}
+        data = json.loads(proc.stdout)
+    except (subprocess.SubprocessError, json.JSONDecodeError, OSError):
+        return {}
+    try:
+        cache_file.write_text(json.dumps(data), encoding="utf-8")
+    except OSError:
+        pass
+    return data
+
+
+def _format_remaining(seconds: int) -> str:
+    if seconds < 60:
+        return f"{seconds}s"
+    if seconds < 3600:
+        return f"{seconds // 60}m"
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    return f"{h}h{m}m" if m else f"{h}h"
+
+
+def _bar(percent: float, width: int = 10) -> str:
+    """Render a unicode progress bar with color thresholds."""
+    pct = max(0, min(100, int(percent)))
+    filled = pct * width // 100
+    empty = width - filled
+    if pct >= 90:
+        color = RED
+    elif pct >= 70:
+        color = YELLOW
+    else:
+        color = GREEN
+    return f"{color}{'█' * filled}{DIM}{'░' * empty}{RESET}"
+
+
+def main() -> int:
+    session = _read_session_input()
+    session_id = str(session.get("session_id") or "default")
+    model = (session.get("model") or {}).get("display_name", "Claude")
+
+    rate_limits = (session.get("rate_limits") or {}) if isinstance(session.get("rate_limits"), dict) else {}
+    git_worktree = (session.get("workspace") or {}).get("git_worktree") if isinstance(session.get("workspace"), dict) else None
+
+    status = _get_status(session_id)
+
+    # Line 1: model + project header
+    if not status:
+        print(f"{CYAN}[{model}]{RESET} {DIM}audio-hooks (status unavailable){RESET}")
+        return 0
+
+    version = status.get("version", "?")
+    enabled_count = status.get("enabled_hook_count", 0)
+    total_count = status.get("total_hook_count", 0)
+    theme = status.get("theme", "default")
+    webhook = status.get("webhook") or {}
+    webhook_part = f"webhook: {webhook.get('format', 'raw')}" if webhook.get("enabled") else f"{DIM}webhook: off{RESET}"
+
+    line1 = (
+        f"{CYAN}[{model}]{RESET} \U0001f50a audio-hooks v{version} | "
+        f"{enabled_count}/{total_count} hooks | "
+        f"{webhook_part} | theme: {theme}"
+    )
+    print(line1)
+
+    # Line 2: conditional state
+    parts = []
+
+    snooze = status.get("snooze") or {}
+    if snooze.get("active"):
+        remaining = int(snooze.get("remaining_seconds", 0))
+        parts.append(f"{YELLOW}[SNOOZED {_format_remaining(remaining)}]{RESET}")
+
+    focus = status.get("focus_flow") or {}
+    if focus.get("enabled") and focus.get("mode") not in (None, "disabled", ""):
+        parts.append(f"{CYAN}[FOCUS: {focus.get('mode')}]{RESET}")
+
+    if git_worktree:
+        parts.append(f"\U0001f33f {git_worktree}")
+
+    five_hour = (rate_limits.get("five_hour") or {}) if isinstance(rate_limits, dict) else {}
+    used = five_hour.get("used_percentage")
+    if used is not None:
+        try:
+            pct = float(used)
+            parts.append(f"{_bar(pct)} 5h: {int(pct)}%")
+        except (TypeError, ValueError):
+            pass
+
+    if parts:
+        print("  ".join(parts))
+    return 0
+
+
+if __name__ == "__main__":
+    try:
+        sys.exit(main())
+    except Exception:
+        # Never break the user's terminal — degrade silently.
+        sys.exit(0)

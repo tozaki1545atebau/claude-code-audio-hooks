@@ -5,8 +5,17 @@
 
 set -e
 
-# Non-interactive mode flag
-NON_INTERACTIVE=false
+# Non-interactive mode flag.
+# Auto-engages when stdin is not a TTY (piped uninstall, AI agent, CI) or
+# when CLAUDE_NONINTERACTIVE=1 is set. Forced via --yes / --non-interactive.
+if [ ! -t 0 ] || [ -n "${CLAUDE_NONINTERACTIVE:-}" ]; then
+    NON_INTERACTIVE=true
+else
+    NON_INTERACTIVE=false
+fi
+# Default in non-interactive mode: PRESERVE config and audio (less destructive).
+# Use --purge to remove them in non-interactive mode.
+PURGE=false
 
 # Colors
 RED='\033[0;31m'
@@ -62,6 +71,10 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --yes|-y|--non-interactive)
             NON_INTERACTIVE=true
+            shift
+            ;;
+        --purge)
+            PURGE=true
             shift
             ;;
         --help|-h)
@@ -356,10 +369,14 @@ echo -e "${BLUE}${BOLD}Optional cleanup:${NC}\n"
 # Ask about configuration file
 if [ -f "$PROJECT_DIR/config/user_preferences.json" ]; then
     if [ "$NON_INTERACTIVE" = true ]; then
-        # In non-interactive mode, automatically remove (with backup)
-        cp "$PROJECT_DIR/config/user_preferences.json" "$BACKUP_DIR/user_preferences.json.backup"
-        rm "$PROJECT_DIR/config/user_preferences.json"
-        echo -e "${GREEN}✓${NC} Removed configuration file (backed up)"
+        # Non-interactive: only remove if --purge was given. Default is PRESERVE.
+        if [ "$PURGE" = true ]; then
+            cp "$PROJECT_DIR/config/user_preferences.json" "$BACKUP_DIR/user_preferences.json.backup"
+            rm "$PROJECT_DIR/config/user_preferences.json"
+            echo -e "${GREEN}✓${NC} Removed configuration file (backed up, --purge)"
+        else
+            echo -e "${CYAN}ℹ${NC} Preserved configuration file (use --purge to remove)"
+        fi
     else
         read -p "Remove your configuration file (config/user_preferences.json)? (y/N): " -n 1 -r
         echo ""
@@ -377,12 +394,14 @@ fi
 
 # Ask about audio files
 if [ "$NON_INTERACTIVE" = true ]; then
-    # In non-interactive mode, automatically remove (with backup)
-    if [ -d "$PROJECT_DIR/audio/default" ]; then
+    # Non-interactive: only remove if --purge was given. Default is PRESERVE.
+    if [ "$PURGE" = true ] && [ -d "$PROJECT_DIR/audio/default" ]; then
         mkdir -p "$BACKUP_DIR/audio"
         cp -r "$PROJECT_DIR/audio/default" "$BACKUP_DIR/audio/"
         rm -rf "$PROJECT_DIR/audio/default"/*
-        echo -e "${GREEN}✓${NC} Removed audio files (backed up)"
+        echo -e "${GREEN}✓${NC} Removed audio files (backed up, --purge)"
+    elif [ -d "$PROJECT_DIR/audio/default" ]; then
+        echo -e "${CYAN}ℹ${NC} Preserved audio files (use --purge to remove)"
     fi
 else
     read -p "Remove audio files in audio/default/ directory? (y/N): " -n 1 -r

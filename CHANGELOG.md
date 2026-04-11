@@ -5,6 +5,112 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] - 2026-04-11
+
+**AI-first redesign.** Catches up to ~9 months of Claude Code releases (v2.1.69 → v2.1.101) and re-frames every project surface around Claude Code as the operator.
+
+### Added — AI interface layer
+
+- **`bin/audio-hooks` CLI binary** — single Python entry point exposing 27 JSON-output subcommands. No prompts, no colors, no spinners. Output is JSON to stdout; nonzero exit codes carry structured error bodies. Default invocation (`audio-hooks` with no args) returns the canonical machine manifest.
+  - `manifest`, `manifest --schema` — canonical introspection (subcommands, hooks, config keys, error codes, env vars) and JSON Schema for `user_preferences.json`
+  - `status`, `version`, `diagnose` — full state snapshot, version + install detection, system check
+  - `get`, `set` — read/write any config key via dotted path (auto-coerces bool/int/JSON)
+  - `hooks list/enable/disable/enable-only` — per-hook state management
+  - `theme list/set` — switch between voice and chime audio themes
+  - `snooze [duration|off|status]` — temporary mute (forms: 30m, 1h, 90s, 2d)
+  - `webhook set/clear/test` — Slack/Discord/Teams/ntfy/raw webhook config + test
+  - `tts set` — TTS config including v5.0 `speak_assistant_message`
+  - `rate-limits set` — rate-limit alert thresholds
+  - `test <hook|all>` — synthetic-stdin smoke test
+  - `logs tail/clear` — NDJSON event stream
+  - `install/uninstall/update` — non-interactive install management
+  - `statusline show/install/uninstall` — manage Claude Code status line registration
+- **Plugin SKILL** at `plugins/audio-hooks/skills/audio-hooks/SKILL.md` — natural-language interface that lets Claude Code translate user requests like "snooze for an hour" or "switch to chimes" into the right `audio-hooks` subcommand.
+- **NDJSON structured logging** — every event is one JSON line at `${CLAUDE_PLUGIN_DATA}/logs/events.ndjson` with stable schema `audio-hooks.v1`. Errors include `code` (16 stable enum values), `message`, `hint`, and `suggested_command`. Log rotation: 5 MB cap, 3 files kept. The legacy free-text `debug.log`, `errors.log`, and `hook_triggers.log` are removed; the legacy `log_debug`/`log_error`/`log_trigger` helpers are now thin NDJSON wrappers for backwards compatibility.
+- **Canonical AI doc rewrite** of `CLAUDE.md` with operating principles, three-command quickstart, full hook catalogue, configuration key reference, error code reference, environment variables, decision tree, and version history.
+- **JSON Schema** at `config/user_preferences.schema.json` referenced from `default_preferences.json` via `$schema` for editor validation.
+
+### Added — four new hook events
+
+- `PermissionDenied` (default enabled) — auto mode classifier denials. Hook can return `{retry: true}` when configured.
+- `CwdChanged` (default disabled) — Claude changed working directory.
+- `FileChanged` (default disabled) — watched file changed on disk; matcher takes literal filenames.
+- `TaskCreated` (default enabled) — sibling of the existing `TaskCompleted` hook.
+
+Total hook count is now **26**.
+
+### Added — new stdin field parsing
+
+The notification context, webhook payload, and TTS branches now consume every field Claude Code provides via stdin:
+
+- `last_assistant_message` (Stop, SubagentStop) — TTS can speak Claude's actual final reply when `tts.speak_assistant_message: true`
+- `worktree.{name,branch,path,original_cwd,original_branch}`
+- `agent.{name}`, `agent_id`, `agent_type`
+- `notification_type` (permission_prompt, idle_prompt, auth_success, elicitation_dialog)
+- `source` (SessionStart: startup/resume/clear/compact)
+- `error_type` (StopFailure: rate_limit/authentication_failed/billing_error/...)
+- `trigger` (PreCompact, PostCompact: manual/auto)
+- `load_reason` (InstructionsLoaded: session_start/nested_traversal/...)
+- `permission_suggestions` (PermissionRequest)
+- `rate_limits.{five_hour,seven_day}` for proactive warnings (see below)
+
+A universal context suffix appends `[session: foo, worktree: bar, agent: baz]` to every notification when `notification_settings.detail_level` allows.
+
+### Added — native matcher routing
+
+`hook_runner.py` now accepts synthetic event names like `session_start_resume`, `stop_failure_rate_limit`, `notification_idle_prompt`, `precompact_manual`. Each maps to a canonical hook plus a per-variant audio override. The plugin's `hooks/hooks.json` registers separate handlers per matcher value, so Claude Code's matcher engine routes events at the settings.json layer instead of inside Python branching. Faster, configurable per-matcher, and per-handler `async: true` means a slow rate-limit-failure path doesn't block the auth-failure path. Legacy canonical event names (`session_start`, `stop_failure`, etc.) keep working unchanged for backwards compatibility.
+
+### Added — rate-limit pre-check
+
+On every hook invocation, the runner inspects stdin `rate_limits.{five_hour,seven_day}.used_percentage` and plays a one-shot warning audio when crossing configured thresholds (default `[80, 95]`). Each `(window, threshold, resets_at)` tuple fires exactly once per reset window via marker-file debounce — the user is warned at 80% and again at 95% but never spammed. Configurable via `audio-hooks rate-limits set --five-hour-thresholds 80,95`.
+
+### Added — fire-and-forget webhook subprocess
+
+Webhook dispatch now spawns a tiny detached Python subprocess that does the urlopen and exits. The parent hook process can exit immediately even on slow webhooks. Failures land in NDJSON with `WEBHOOK_TIMEOUT` or `WEBHOOK_HTTP_ERROR` codes. The raw payload is now versioned (`audio-hooks.webhook.v1`) and surfaces every new stdin field as a top-level key for downstream consumers to pin.
+
+### Added — plugin packaging
+
+- `.claude-plugin/marketplace.json` — single-plugin marketplace catalog
+- `plugins/audio-hooks/.claude-plugin/plugin.json` — plugin manifest with `userConfig` for headless install-time config
+- `plugins/audio-hooks/hooks/hooks.json` — matcher-scoped hook registration for all 26 events using `${CLAUDE_PLUGIN_ROOT}` paths
+- `plugins/audio-hooks/runner/run.py` — plugin entry point that imports the bundled `hook_runner.py`
+- `scripts/build-plugin.sh` — non-interactive sync script that mirrors canonical files (`/hooks/`, `/bin/`, `/audio/`, `/config/`) into the plugin layout. Run after editing canonical files. `--check` flag for CI verification.
+- Plugin install: `/plugin marketplace add ChanMeng666/claude-code-audio-hooks` then `/plugin install audio-hooks@chanmeng-audio-hooks`.
+
+### Added — status line script
+
+- `bin/audio-hooks-statusline` — two-line status line with model + version + enabled-hook count + theme on line 1, and conditional snooze indicator + focus-flow indicator + worktree branch + colored rate-limit progress bar on line 2. Caches `audio-hooks status` for 5 seconds keyed on `session_id`. Designed to be registered with `refreshInterval: 60` so snooze countdowns and rate-limit bars update during idle periods.
+- `audio-hooks statusline install` writes the `statusLine` field in `~/.claude/settings.json` non-interactively.
+
+### Changed — non-interactive scripts
+
+Every shell script in `scripts/` now auto-engages non-interactive mode when stdin is not a TTY or `CLAUDE_NONINTERACTIVE=1` is set. Specifically:
+
+- `install-complete.sh` — `NON_INTERACTIVE` auto-engages on non-TTY; the optional audio test prompt is skipped
+- `uninstall.sh` — `NON_INTERACTIVE` auto-engages on non-TTY; default behaviour now PRESERVES the user's config and audio files (less destructive). Use `--purge` to remove them in non-interactive mode.
+- `configure.sh` — when invoked with no args by a non-TTY caller, emits `INTERACTIVE_SCRIPT` JSON pointer instead of opening the human menu. Programmatic mode (with flags) is unchanged.
+- `test-audio.sh` — same: emits `INTERACTIVE_SCRIPT` JSON pointer pointing to `audio-hooks test all`.
+
+### Changed — config storage location
+
+Plugin installs now store `user_preferences.json` at `${CLAUDE_PLUGIN_DATA}/user_preferences.json` (writable, persistent across plugin updates). On first read, the runner copies `default_preferences.json` from the plugin into place. Script installs continue to use `<project_dir>/config/user_preferences.json` as before.
+
+### Changed — project version
+
+Bumped from 4.7.0 to 5.0.0 across `hook_runner.py`, `bin/audio-hooks`, `default_preferences.json`, plugin manifests, and `CLAUDE.md`.
+
+### Backwards compatibility
+
+- The four pre-v5.0 hook entries in `~/.claude/settings.json` keep working unchanged (canonical names still resolve in `hook_runner.main()`).
+- The legacy `log_debug`/`log_error`/`log_trigger` helpers stay as thin NDJSON wrappers, so any third-party scripts that call them keep working.
+- The pre-v5.0 `user_preferences.json` schema is fully forward-compatible — new keys are optional with sensible defaults.
+- Users on the script install path can keep running `bash scripts/install-complete.sh`. The plugin install path is additive.
+
+### Removed
+
+- Free-text `debug.log`, `errors.log`, `hook_triggers.log` files (replaced by NDJSON `events.ndjson`).
+- Interactive `[y/N]` prompts in install/uninstall flows when stdin isn't a TTY (auto-non-interactive mode).
+
 ## [4.7.0] - 2026-03-22
 
 ### Added

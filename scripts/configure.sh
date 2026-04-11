@@ -3,8 +3,20 @@
 # Interactive Mode (no args): Menu-driven interface for humans
 # Programmatic Mode (with args): CLI interface for Claude Code and scripts
 # Compatible with bash 3.2+ (macOS default)
+#
+# v5.0: When invoked with no arguments AND stdin is not a TTY (or
+# CLAUDE_NONINTERACTIVE=1), this script emits a JSON pointer to the
+# audio-hooks CLI instead of opening the human menu. Programmatic mode
+# (calling with flags like --theme, --enable, --snooze) is unchanged.
 
 set -e
+
+# AI-first guard: if invoked with no args by a non-human caller, redirect to
+# the audio-hooks CLI which is the canonical machine interface.
+if [ $# -eq 0 ] && { [ ! -t 0 ] || [ -n "${CLAUDE_NONINTERACTIVE:-}" ]; }; then
+    printf '{"ok":false,"error":{"code":"INTERACTIVE_SCRIPT","message":"configure.sh interactive menu is human-only. Use the audio-hooks CLI instead.","suggested_command":"audio-hooks manifest","hint":"Pass flags like --theme, --enable, --disable, --snooze to use programmatic mode."}}\n'
+    exit 0
+fi
 
 # Bash version compatibility notice
 if [ "${BASH_VERSION%%.*}" -eq 3 ]; then

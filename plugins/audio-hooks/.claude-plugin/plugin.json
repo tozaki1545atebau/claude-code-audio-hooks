@@ -1,0 +1,32 @@
+{
+  "name": "audio-hooks",
+  "version": "5.0.0",
+  "description": "Audio notifications + AI-controlled config for every Claude Code event. 26 hooks, native matcher routing, TTS, webhooks, status line, focus flow, rate-limit alerts.",
+  "author": {
+    "name": "Chan Meng",
+    "url": "https://github.com/ChanMeng666"
+  },
+  "homepage": "https://github.com/ChanMeng666/claude-code-audio-hooks",
+  "repository": "https://github.com/ChanMeng666/claude-code-audio-hooks",
+  "license": "MIT",
+  "keywords": ["audio", "notifications", "hooks", "tts", "webhook", "ai-operated", "rate-limits"],
+  "hooks": "./hooks/hooks.json",
+  "userConfig": {
+    "audio_theme": {
+      "description": "Audio theme: 'default' (voice) or 'custom' (chimes). Default: custom.",
+      "sensitive": false
+    },
+    "webhook_url": {
+      "description": "Optional webhook URL (Slack/Discord/Teams/ntfy/raw). Leave blank to skip.",
+      "sensitive": false
+    },
+    "webhook_format": {
+      "description": "Optional webhook format: slack | discord | teams | ntfy | raw.",
+      "sensitive": false
+    },
+    "tts_enabled": {
+      "description": "Enable TTS announcements. true | false. Default: false.",
+      "sensitive": false
+    }
+  }
+}

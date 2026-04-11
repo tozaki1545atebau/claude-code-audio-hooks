@@ -1,0 +1,139 @@
+{
+  "description": "claude-code-audio-hooks v5.0 — matcher-scoped hook registration. Each handler invokes hook_runner.py (via the plugin's runner/ wrapper) with either a canonical hook name or a v5.0 synthetic variant name (e.g. session_start_resume) so matcher routing happens in settings.json instead of Python branching.",
+
+  "hooks": {
+    "Notification": [
+      { "matcher": "permission_prompt",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" notification_permission_prompt", "async": true, "timeout": 10 }] },
+      { "matcher": "idle_prompt",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" notification_idle_prompt", "async": true, "timeout": 10 }] },
+      { "matcher": "auth_success",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" notification_auth_success", "async": true, "timeout": 10 }] },
+      { "matcher": "elicitation_dialog",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" notification_elicitation_dialog", "async": true, "timeout": 10 }] }
+    ],
+
+    "Stop": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" stop", "async": true, "timeout": 10 }] }
+    ],
+
+    "StopFailure": [
+      { "matcher": "rate_limit",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" stop_failure_rate_limit", "async": true, "timeout": 10 }] },
+      { "matcher": "authentication_failed",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" stop_failure_authentication_failed", "async": true, "timeout": 10 }] },
+      { "matcher": "billing_error|invalid_request|server_error|max_output_tokens|unknown",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" stop_failure_other", "async": true, "timeout": 10 }] }
+    ],
+
+    "SessionStart": [
+      { "matcher": "startup",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" session_start_startup", "async": true, "timeout": 10 }] },
+      { "matcher": "resume",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" session_start_resume", "async": true, "timeout": 10 }] },
+      { "matcher": "clear",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" session_start_clear", "async": true, "timeout": 10 }] },
+      { "matcher": "compact",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" session_start_compact", "async": true, "timeout": 10 }] }
+    ],
+
+    "SessionEnd": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" session_end", "async": true, "timeout": 10 }] }
+    ],
+
+    "SubagentStop": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" subagent_stop", "async": true, "timeout": 10 }] }
+    ],
+
+    "SubagentStart": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" subagent_start", "async": true, "timeout": 10 }] }
+    ],
+
+    "PermissionRequest": [
+      { "matcher": "",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" permission_request", "async": true, "timeout": 10 }] }
+    ],
+
+    "PermissionDenied": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" permission_denied", "async": true, "timeout": 10 }] }
+    ],
+
+    "TaskCreated": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" task_created", "async": true, "timeout": 10 }] }
+    ],
+
+    "TaskCompleted": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" task_completed", "async": true, "timeout": 10 }] }
+    ],
+
+    "TeammateIdle": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" teammate_idle", "async": true, "timeout": 10 }] }
+    ],
+
+    "PreToolUse": [
+      { "matcher": "Bash",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" pretooluse", "async": true, "timeout": 10 }] }
+    ],
+
+    "PostToolUse": [
+      { "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" posttooluse", "async": true, "timeout": 10 }] }
+    ],
+
+    "PostToolUseFailure": [
+      { "matcher": "Bash|Write|Edit",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" posttoolusefailure", "async": true, "timeout": 10 }] }
+    ],
+
+    "UserPromptSubmit": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" userpromptsubmit", "async": true, "timeout": 10 }] }
+    ],
+
+    "PreCompact": [
+      { "matcher": "manual",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" precompact_manual", "async": true, "timeout": 10 }] },
+      { "matcher": "auto",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" precompact_auto", "async": true, "timeout": 10 }] }
+    ],
+
+    "PostCompact": [
+      { "matcher": "manual",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" postcompact_manual", "async": true, "timeout": 10 }] },
+      { "matcher": "auto",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" postcompact_auto", "async": true, "timeout": 10 }] }
+    ],
+
+    "ConfigChange": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" config_change", "async": true, "timeout": 10 }] }
+    ],
+
+    "InstructionsLoaded": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" instructions_loaded", "async": true, "timeout": 10 }] }
+    ],
+
+    "WorktreeCreate": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" worktree_create", "async": true, "timeout": 10 }] }
+    ],
+
+    "WorktreeRemove": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" worktree_remove", "async": true, "timeout": 10 }] }
+    ],
+
+    "Elicitation": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" elicitation", "async": true, "timeout": 10 }] }
+    ],
+
+    "ElicitationResult": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" elicitation_result", "async": true, "timeout": 10 }] }
+    ],
+
+    "CwdChanged": [
+      { "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" cwd_changed", "async": true, "timeout": 10 }] }
+    ],
+
+    "FileChanged": [
+      { "matcher": ".env|.envrc|.env.local",
+        "hooks": [{ "type": "command", "command": "python \"${CLAUDE_PLUGIN_ROOT}/runner/run.py\" file_changed", "async": true, "timeout": 10 }] }
+    ]
+  }
+}
