@@ -66,10 +66,14 @@ sync_dir() {
 }
 
 # Canonical files
-sync_file "$REPO/hooks/hook_runner.py"           "$PLUGIN/hooks/hook_runner.py"
-sync_file "$REPO/bin/audio-hooks"                "$PLUGIN/bin/audio-hooks"
-sync_file "$REPO/bin/audio-hooks.cmd"            "$PLUGIN/bin/audio-hooks.cmd"
-sync_file "$REPO/config/default_preferences.json" "$PLUGIN/config/default_preferences.json"
+sync_file "$REPO/hooks/hook_runner.py"             "$PLUGIN/hooks/hook_runner.py"
+sync_file "$REPO/bin/audio-hooks"                  "$PLUGIN/bin/audio-hooks"
+sync_file "$REPO/bin/audio-hooks.py"               "$PLUGIN/bin/audio-hooks.py"
+sync_file "$REPO/bin/audio-hooks.cmd"              "$PLUGIN/bin/audio-hooks.cmd"
+sync_file "$REPO/bin/audio-hooks-statusline"       "$PLUGIN/bin/audio-hooks-statusline"
+sync_file "$REPO/bin/audio-hooks-statusline.py"    "$PLUGIN/bin/audio-hooks-statusline.py"
+sync_file "$REPO/bin/audio-hooks-statusline.cmd"   "$PLUGIN/bin/audio-hooks-statusline.cmd"
+sync_file "$REPO/config/default_preferences.json"  "$PLUGIN/config/default_preferences.json"
 
 # Audio assets (both themes)
 sync_dir "$REPO/audio/default" "$PLUGIN/audio/default"
