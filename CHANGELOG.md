@@ -5,6 +5,53 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.3] - 2026-04-11
+
+Documentation correction. v5.0.2's README and release notes overclaimed that *"the human never types a command — Claude Code does everything"*. The user immediately caught the overclaim during real testing: the AI inside a Claude Code session **cannot** invoke `/reload-plugins` (or any other slash command) because slash commands are interactive REPL primitives with no CLI equivalent and no tool exposure. The user has to type `/reload-plugins` themselves once after install.
+
+This release does not change any code — only the documentation, which now accurately describes what the AI can and cannot do.
+
+### Fixed
+
+- **README "AI-first way" section** now honestly describes the install flow as **4 user actions** (1 shell command + 2 natural-language prompts + 1 slash command), not "one sentence". The mermaid sequence diagram is updated to highlight the manual `/reload-plugins` step in a contrasting color block, making it visually obvious which step the user must perform.
+- **README tagline** rewritten from *"You never type a command"* to *"You type one slash command at install time. Then natural language forever."*
+- **README "Why this matters"** section adds an explicit honesty paragraph: *"the AI can run every `audio-hooks` subcommand and every `claude plugin` subcommand via its Bash tool. It cannot run interactive REPL commands like `/reload-plugins` because Claude Code's slash-command parser only accepts user keystrokes, not tool calls."*
+- **README "Design philosophy"** section's natural-language operating model paragraph rewritten: *"the human types one slash command in their lifetime with this project (`/reload-plugins`, once, at install time)."*
+- **CLAUDE.md "AI quickstart"** section rewritten as a step-by-step guide for Claude Code itself when operating the project on a human's behalf. New "Critical" warning: *"there is exactly one thing the user must type themselves in the entire install flow: `/reload-plugins`. The interactive REPL command has no CLI equivalent. Do NOT pretend you can run it via the Bash tool — you cannot."*
+- **CLAUDE.md decision tree** install row updated to: *"Run `claude plugin marketplace add` and `claude plugin install` via the Bash tool. Then ask the user to type `/reload-plugins` (you cannot run this — REPL only)."*
+
+### What the AI actually can and cannot do (verified)
+
+**The AI inside a Claude Code session CAN run via the Bash tool:**
+- `claude plugin marketplace add <source>` ✓
+- `claude plugin marketplace list` ✓
+- `claude plugin marketplace remove <name>` ✓
+- `claude plugin marketplace update [name]` ✓
+- `claude plugin install <plugin>` ✓
+- `claude plugin uninstall <plugin>` ✓
+- `claude plugin enable <plugin>` ✓
+- `claude plugin disable <plugin>` ✓
+- `claude plugin update <plugin>` ✓
+- `claude plugin list` ✓
+- `claude plugin validate <path>` ✓
+- Every `audio-hooks` subcommand (status, manifest, get, set, hooks list/enable/disable, theme, snooze, webhook, tts, rate-limits, test, diagnose, logs, install, uninstall, statusline) ✓
+
+**The AI CANNOT invoke** (REPL-only, no tool exposure):
+- `/reload-plugins` ✗
+- `/exit` ✗
+- `/clear` ✗
+- `/doctor` ✗
+- Any other slash command typed at the Claude Code REPL prompt
+
+### Why the previous overclaim happened
+
+I assumed that because the SKILL system can invoke skill commands (e.g. `/audio-hooks`), the same mechanism could invoke other slash commands like `/reload-plugins`. It cannot. The Skill tool's documentation is explicit: *"Do not use this tool for built-in CLI commands (like `/help`, `/clear`, etc.)"*. Built-in REPL commands are **not** skills and have no programmatic invocation path.
+
+### Changed
+
+- Project version bumped 5.0.2 → 5.0.3 across `hook_runner.py`, `bin/audio-hooks.py`, `marketplace.json`, `plugin.json`, `default_preferences.json`, `README.md`, `CLAUDE.md`.
+- The v5.0.2 GitHub release notes have been edited in place to add a correction banner pointing to v5.0.3.
+
 ## [5.0.2] - 2026-04-11
 
 The first end-to-end install of v5.0.1 on a real Claude Code v2.1.101 session surfaced five real bugs that were invisible from outside an actual install. v5.0.2 fixes all of them and rewrites the public README + docs to lead with the project's defining selling point: **users never type a command, they just talk to Claude Code in natural language**.

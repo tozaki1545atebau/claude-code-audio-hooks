@@ -1,6 +1,6 @@
 # Claude Code Audio Hooks — AI Operator Guide
 
-> **Version:** 5.0.2 | **Last Updated:** 2026-04-11
+> **Version:** 5.0.3 | **Last Updated:** 2026-04-11
 
 This document is the canonical machine-facing guide for the claude-code-audio-hooks project. It is written for **Claude Code (and other AI agents) as the operator** — not for humans. A human user says "install audio hooks for me" or "snooze audio for an hour" and you do everything via the project's structured CLI without any human-in-the-loop confirmation, menu navigation, or log file reading.
 
@@ -12,23 +12,33 @@ This document is the canonical machine-facing guide for the claude-code-audio-ho
 4. **No interactive scripts.** Every shell script in `scripts/` is non-interactive when stdin is not a TTY or `CLAUDE_NONINTERACTIVE=1` is set. Human-only menus (`configure.sh`, `test-audio.sh`) auto-redirect to `audio-hooks` via structured JSON pointers.
 5. **You never edit `user_preferences.json` by hand.** Use `audio-hooks set` and the typed setters.
 
-## AI quickstart (three commands)
+## AI quickstart for Claude Code operating this project on a human's behalf
 
-After the user asks you to install the project:
+When the user says *"install audio-hooks for me"*, **you (Claude Code) run these via your Bash tool**, then ask the user to type `/reload-plugins` once:
 
 ```bash
-# 1. Install (inside Claude Code, this is a slash command)
-/plugin marketplace add ChanMeng666/claude-code-audio-hooks
-/plugin install audio-hooks@chanmeng-audio-hooks
+# Step 1: marketplace add (you run this via Bash tool)
+claude plugin marketplace add ChanMeng666/claude-code-audio-hooks
 
-# 2. Verify everything is wired up
+# Step 2: plugin install (you run this via Bash tool)
+claude plugin install audio-hooks@chanmeng-audio-hooks
+
+# Step 3: tell the user to type /reload-plugins  
+# (you cannot run this — it is a REPL slash command with no CLI equivalent)
+```
+
+Then the user types `/reload-plugins` themselves. After that, **you can run every other operation via the Bash tool forever** — `audio-hooks status`, `audio-hooks diagnose`, `audio-hooks test all`, `audio-hooks theme set custom`, etc.
+
+```bash
+# Step 4: verify (you run this via Bash tool after the user reloads)
 audio-hooks status
-
-# 3. Smoke-test every enabled hook
+audio-hooks diagnose
 audio-hooks test all
 ```
 
-That's it. The plugin install registers all 26 hook event handlers via `hooks/hooks.json` automatically, the audio files are bundled in `plugins/audio-hooks/audio/`, and `${CLAUDE_PLUGIN_DATA}/user_preferences.json` is auto-initialised from the default template on first read.
+The plugin install registers all 26 hook event handlers via `hooks/hooks.json` automatically, the audio files are bundled in `plugins/audio-hooks/audio/`, and `${CLAUDE_PLUGIN_DATA}/user_preferences.json` is auto-initialised from the default template on first read.
+
+**Critical**: there is exactly **one** thing the user must type themselves in the entire install flow: `/reload-plugins`. The interactive REPL command has no CLI equivalent (`claude plugin --help` lists no reload subcommand). Do NOT pretend you can run it via the Bash tool — you cannot. Tell the user to type it, wait for them to confirm, then continue with verification.
 
 If the user is on the legacy script install path (cloned the repo and ran `bash scripts/install-complete.sh`), the same `audio-hooks` binary still works — it discovers the project root by walking up from its own location.
 
@@ -260,7 +270,7 @@ After editing any canonical file in `/hooks/`, `/bin/`, `/audio/`, or `/config/`
 
 | User says | Run |
 |---|---|
-| "install audio hooks" / "set up audio notifications" | `/plugin marketplace add ChanMeng666/claude-code-audio-hooks` then `/plugin install audio-hooks@chanmeng-audio-hooks`. Verify with `audio-hooks status`. |
+| "install audio hooks" / "set up audio notifications" | Run `claude plugin marketplace add ChanMeng666/claude-code-audio-hooks` and `claude plugin install audio-hooks@chanmeng-audio-hooks` via the Bash tool. Then ask the user to type `/reload-plugins` (you cannot run this — REPL only). After they confirm, verify with `audio-hooks diagnose` and `audio-hooks test all`. |
 | "snooze audio for 30 minutes" | `audio-hooks snooze 30m` |
 | "be quiet for the rest of the day" | `audio-hooks snooze 8h` |
 | "unmute" / "resume audio" | `audio-hooks snooze off` |

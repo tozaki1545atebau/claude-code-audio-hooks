@@ -2,13 +2,13 @@
 
 # Claude Code Audio Hooks
 
-> **You never type a command. You never edit a config file. You never read a log.**
-> You open Claude Code, say *"install audio hooks"*, and Claude Code does everything else — install the plugin, register the 26 hook events, fetch the audio files, configure your preferences, and verify it works. From then on, you operate the project entirely through natural language: *"snooze for an hour"*, *"switch to chimes"*, *"send notifications to my Slack"*, *"why is there no sound"*. Claude Code translates each request into the right `audio-hooks` subcommand and reports back. **The human is the requester. Claude Code is the operator.**
+> **You type one slash command at install time. Then natural language forever.**
+> Open Claude Code, ask it to install the plugin (the AI runs the install via its Bash tool), type `/reload-plugins` once to activate, and you're done. From then on, every operation is one English sentence — *"snooze for an hour"*, *"switch to chimes"*, *"send notifications to my Slack"*, *"why is there no sound"*. Claude Code translates each request into the right `audio-hooks` subcommand and reports back. **The human is the requester. Claude Code is the operator** (post-install, with one exception: `/reload-plugins` has no CLI equivalent, so you type it once).
 
 > **AI-operated audio notification system for Claude Code.** 26 hook events, plugin-native distribution, single JSON CLI, `/audio-hooks` SKILL for natural-language activation, structured NDJSON logs, rate-limit alerts, ElevenLabs voice + chime themes.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-5.0.2-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
+[![Version](https://img.shields.io/badge/version-5.0.3-blue.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS-green.svg)](https://github.com/ChanMeng666/claude-code-audio-hooks)
 [![Claude Code](https://img.shields.io/badge/Claude_Code-v2.1.80%2B-brightgreen.svg)](https://claude.ai/download)
 [![Plugin](https://img.shields.io/badge/install-just_talk_to_Claude-purple.svg)](#-the-ai-first-way-just-talk-to-claude-code)
@@ -45,44 +45,56 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the full v5.0 / v5.0.1 entries.
 
 ---
 
-## 🤖 The AI-first way (just talk to Claude Code)
+## 🤖 The AI-first way (talk to Claude Code, with one slash command at install time)
 
-**You don't need to type any of the commands in this README.** They're shown for completeness, but the recommended way to operate this project is to **paste a natural-language prompt into Claude Code and let it do the work.**
+**For 99% of operations, you just talk to Claude Code in plain English** and the AI runs the right `audio-hooks` subcommand via its Bash tool. The exception is the one-time install: Claude Code's `/reload-plugins` command has no CLI equivalent (it's REPL-only), so the human types it exactly once after the plugin is installed. Everything else — install fetch, configure, snooze, theme switch, webhook setup, troubleshoot, uninstall — is pure natural language.
 
-This is the project's defining selling point: every operation — install, configure, snooze, switch themes, set up webhooks, troubleshoot, uninstall — can be triggered by a single sentence in plain English. Claude Code reads the `/audio-hooks` SKILL bundled with the plugin, picks the right `audio-hooks` subcommand, runs it via its Bash tool, and reports the result. You never see a slash command unless you want to.
+This is the project's defining selling point: **after the one `/reload-plugins`, you never type another command for the rest of the project's life on your machine.** You say *"snooze for an hour"*, *"switch to chimes"*, *"send notifications to my Slack"*, *"why is there no sound"* — and Claude Code translates each request into the right `audio-hooks` subcommand, runs it via its Bash tool, and reports the result. You never see a slash command unless you want to.
 
-### How the conversation works
+### How the install conversation works
 
 ```mermaid
 sequenceDiagram
     participant Human
     participant Terminal
     participant Claude as Claude Code
+    participant Bash as Bash tool
     participant Skill as /audio-hooks SKILL
     participant CLI as audio-hooks CLI
-    participant Plugin as Plugin runtime
 
     Human->>Terminal: type `claude` to start a session
-    Human->>Claude: "install the audio-hooks plugin from<br/>github.com/ChanMeng666/claude-code-audio-hooks,<br/>then verify it and switch to chime audio"
-    Claude->>Plugin: /plugin marketplace add ChanMeng666/claude-code-audio-hooks
-    Claude->>Plugin: /plugin install audio-hooks@chanmeng-audio-hooks
-    Claude->>Plugin: /reload-plugins
-    Claude->>CLI: audio-hooks diagnose (via Bash tool)
-    CLI-->>Claude: {"ok":true, "errors":[], ...}
-    Claude->>Skill: SKILL auto-loaded by reload-plugins
-    Claude->>CLI: audio-hooks theme set custom
-    CLI-->>Claude: {"ok":true,"theme":"custom"}
-    Claude-->>Human: "Done. Plugin installed, 26 hooks active,<br/>audio theme set to chimes. Try asking me anything."
+    Human->>Claude: "install audio-hooks plugin from<br/>github.com/ChanMeng666/claude-code-audio-hooks via<br/>`claude plugin marketplace add` and `claude plugin install`"
+    Claude->>Bash: claude plugin marketplace add ChanMeng666/claude-code-audio-hooks
+    Bash-->>Claude: "Successfully added marketplace"
+    Claude->>Bash: claude plugin install audio-hooks@chanmeng-audio-hooks
+    Bash-->>Claude: "Installed audio-hooks. Run /reload-plugins to apply."
+    Claude-->>Human: "Plugin installed.<br/>Type /reload-plugins to activate it."
+
+    rect rgb(255, 230, 200)
+        Note over Human: ⚠ The one manual slash command in the whole flow
+        Human->>Claude: /reload-plugins
+        Claude-->>Human: "Reloaded: 8 plugins, 37 hooks, 5 skills"
+    end
+
+    Human->>Claude: "verify audio-hooks works and switch to chime audio"
+    Claude->>Skill: SKILL activates on intent
+    Claude->>Bash: audio-hooks diagnose
+    Bash-->>Claude: {"ok":true,"errors":[],"warnings":[]}
+    Claude->>Bash: audio-hooks test all
+    Bash-->>Claude: {"ok":true,"passed":6,"failed":0}
+    Claude->>Bash: audio-hooks theme set custom
+    Bash-->>Claude: {"ok":true,"theme":"custom"}
+    Claude-->>Human: "Done. 26 hooks active, all tests passed,<br/>audio theme set to chimes."
+
+    Note over Human,CLI: From here on: pure natural language forever.
     Human->>Claude: "snooze audio for an hour"
     Claude->>Skill: activates on "snooze" intent
     Skill->>CLI: audio-hooks snooze 1h
     CLI-->>Claude: {"ok":true,"active":true,"remaining_seconds":3600}
     Claude-->>Human: "Audio snoozed for 1 hour."
-
-    Note over Human,Plugin: Human only ever types natural language.<br/>Zero commands, zero config files, zero log reading.
 ```
 
-### Step 0 — open Claude Code
+### Step 1 — open Claude Code
 
 In any terminal (PowerShell, bash, zsh, Windows Terminal, iTerm2, anything):
 
@@ -90,24 +102,46 @@ In any terminal (PowerShell, bash, zsh, Windows Terminal, iTerm2, anything):
 claude
 ```
 
-That's the only command **you** ever type in this whole guide. Everything from here on is natural-language messages to Claude Code.
+That's the only **shell** command you type in this whole guide.
 
-### Step 1 — install with one sentence
+### Step 2 — install with one prompt
 
 Paste this into Claude Code:
 
-> **Please install the claude-code-audio-hooks plugin from `github.com/ChanMeng666/claude-code-audio-hooks`. Add the marketplace, install the plugin, run `/reload-plugins` to activate it, then run `audio-hooks diagnose` and `audio-hooks test all` to verify everything works. Tell me when it's ready.**
+> **Please install the audio-hooks plugin from `github.com/ChanMeng666/claude-code-audio-hooks`. Use the Bash tool to run `claude plugin marketplace add ChanMeng666/claude-code-audio-hooks` then `claude plugin install audio-hooks@chanmeng-audio-hooks`. After both commands complete, tell me to type `/reload-plugins` to activate the plugin.**
 
 Claude Code will:
 
-1. Run `/plugin marketplace add ChanMeng666/claude-code-audio-hooks`
-2. Run `/plugin install audio-hooks@chanmeng-audio-hooks`
-3. Run `/reload-plugins`
-4. Run `audio-hooks diagnose` (returns JSON; Claude reads it)
-5. Run `audio-hooks test all` (plays every enabled hook's audio)
-6. Report back in plain English: *"Done. v5.0.1 installed, 26 hooks active, all 26 audio files present, no errors."*
+1. Run `claude plugin marketplace add ChanMeng666/claude-code-audio-hooks` via the Bash tool — fetches the marketplace.json from this GitHub repo
+2. Run `claude plugin install audio-hooks@chanmeng-audio-hooks` via the Bash tool — clones the plugin source into `~/.claude/plugins/cache/`
+3. Tell you to type `/reload-plugins`
 
-You don't need to clone the repo. You don't need to run any bash command. You don't need to know what a slash command is. Claude Code's plugin system fetches everything from GitHub on its own.
+You don't need to clone the repo manually. You don't need to know what a marketplace is. You don't need to run any other bash command. The AI handles both install steps via its Bash tool.
+
+### Step 3 — type `/reload-plugins` (the one manual slash command)
+
+```text
+/reload-plugins
+```
+
+This is the **only** slash command you type in this entire guide. It exists because Claude Code's plugin loader needs an explicit reload signal to pick up newly installed plugins, and the loader has no CLI equivalent — only the interactive REPL command. Every other operation in this project is automated.
+
+After reload, Claude Code reports something like *"Reloaded: 8 plugins, 37 hooks, 5 skills"* — the bump from ~25 hooks to 37 means the audio-hooks plugin's matcher-scoped handlers are now live.
+
+### Step 4 — verify and configure with one prompt
+
+Paste this:
+
+> **Verify audio-hooks works by running `audio-hooks diagnose` and `audio-hooks test all`. Then switch to the chime audio theme.**
+
+Claude Code will:
+
+1. Run `audio-hooks diagnose` (returns JSON; Claude reads it)
+2. Run `audio-hooks test all` (plays every enabled hook's audio)
+3. Run `audio-hooks theme set custom`
+4. Report back in plain English: *"Done. 26 hooks active, all tests passed, audio theme set to chimes."*
+
+**Total user actions for the entire install + first config:** 1 shell command + 2 natural-language prompts + 1 slash command = **4 things**. Steps 2 and 4 are pure natural language; steps 1 and 3 are unavoidable because they're entry/reload primitives the AI literally has no tool to invoke.
 
 ### Step 2 — configure with one sentence
 
@@ -151,6 +185,8 @@ Claude Code runs `/plugin uninstall audio-hooks@chanmeng-audio-hooks`.
 Most CLI tools force the human to learn the tool. This project inverts the contract: **the tool is designed to be learned by Claude Code, not by humans.** The entire surface area is documented in `audio-hooks manifest` (one JSON document), the SKILL teaches Claude Code how to map natural language to that surface, and every error event includes a `suggested_command` Claude Code can execute autonomously. The human's job is to say what they want; Claude Code's job is to make it happen.
 
 This is what "AI-first" means in practice: not "AI-assisted", not "AI-friendly", but **AI-operated**. The human is upstream of Claude Code, not downstream of the CLI.
+
+**The honest scope:** the AI can run **every** `audio-hooks` subcommand and **every** `claude plugin` subcommand via its Bash tool. It cannot run interactive REPL commands like `/reload-plugins`, `/exit`, or `/clear` because Claude Code's slash-command parser only accepts user keystrokes, not tool calls. So the install flow includes exactly **one** manual slash command (`/reload-plugins` after install) and the install assumes Claude Code is already running (you typed `claude` to start it). Everything from Step 4 onwards — every configure / snooze / theme / webhook / TTS / rate-limit / diagnose / log-tail / uninstall operation — is pure natural language.
 
 ---
 
@@ -801,7 +837,7 @@ The human is **upstream** of Claude Code. The CLI surface, the SKILL, the NDJSON
 8. **The `/audio-hooks` SKILL bridges natural language to the CLI.** Trigger phrases like *"snooze audio"*, *"why is there no sound"*, *"send notifications to Slack"* activate the SKILL, which loads a structured prose-and-table guide telling Claude Code exactly which subcommand to run for any user request.
 9. **Single monolith, one repo, one codebase.** No microservices, no multi-repo. The plugin lives inside the same repo as a subdirectory. Claude Code can understand the entire project end-to-end in a single context window.
 
-The natural-language operating model: a human says *"install audio hooks for me"* or *"snooze audio for an hour"* or *"figure out why I'm not hearing anything"* — and Claude Code does everything. The human never opens a config file, never reads a log, never picks a menu option, never types a slash command. The human types **one sentence**; Claude Code handles the rest.
+The natural-language operating model: a human says *"install audio hooks for me"* or *"snooze audio for an hour"* or *"figure out why I'm not hearing anything"* — and Claude Code runs the right sequence of `audio-hooks` and `claude plugin` subcommands via its Bash tool. The human never opens a config file, never reads a log, never picks a menu option. **The human types one slash command in their lifetime with this project** (`/reload-plugins`, once, at install time, because Claude Code's plugin loader has no CLI equivalent for reload). Every other operation, forever after, is natural language.
 
 ---
 
