@@ -31,7 +31,7 @@ from typing import Optional, Dict, Any, List
 
 # Version used for auto-sync: when the installed copy in ~/.claude/hooks/
 # detects a newer version in the project directory, it self-updates.
-HOOK_RUNNER_VERSION = "5.0.0"
+HOOK_RUNNER_VERSION = "5.0.1"
 
 # =============================================================================
 # STRUCTURED LOGGING (NDJSON)
@@ -564,13 +564,11 @@ DEFAULT_AUDIO_FILES = {
     "worktree_remove": "worktree-remove.mp3",
     "elicitation": "elicitation.mp3",
     "elicitation_result": "elicitation-result.mp3",
-    # v5.0 hooks. Placeholder mappings reuse the closest existing file until
-    # the v5.1 sound-design pass ships dedicated files. The diagnose command
-    # surfaces a warning if any of these are missing for the active theme.
-    "permission_denied": "tool-failed.mp3",
-    "cwd_changed": "config-change.mp3",
-    "file_changed": "config-change.mp3",
-    "task_created": "team-task-done.mp3",
+    # v5.0 hooks (dedicated audio shipped in v5.0.1, generated via ElevenLabs)
+    "permission_denied": "permission-denied.mp3",
+    "cwd_changed": "cwd-changed.mp3",
+    "file_changed": "file-changed.mp3",
+    "task_created": "task-created.mp3",
 }
 
 # =============================================================================
@@ -579,6 +577,46 @@ DEFAULT_AUDIO_FILES = {
 
 _config_cache: Optional[Dict[str, Any]] = None
 
+def _apply_plugin_option_overlay(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Overlay CLAUDE_PLUGIN_OPTION_* env vars onto the loaded config (v5.0).
+
+    The plugin manifest declares userConfig keys (audio_theme, webhook_url,
+    webhook_format, tts_enabled). Claude Code exposes them to the hook
+    runner as CLAUDE_PLUGIN_OPTION_<KEY> environment variables. This overlay
+    lets Claude Code populate plugin config at install time without writing
+    to user_preferences.json directly.
+
+    Env vars are case-sensitive lowercase per the Claude Code docs.
+    Empty string means "user did not set this — preserve existing value".
+    """
+    overlays = {
+        "CLAUDE_PLUGIN_OPTION_AUDIO_THEME":   ("audio_theme", str),
+        "CLAUDE_PLUGIN_OPTION_WEBHOOK_URL":   ("webhook_settings.url", str),
+        "CLAUDE_PLUGIN_OPTION_WEBHOOK_FORMAT": ("webhook_settings.format", str),
+        "CLAUDE_PLUGIN_OPTION_TTS_ENABLED":   ("tts_settings.enabled", lambda v: v.lower() in ("1", "true", "yes")),
+    }
+    for env_var, (dotted_key, coerce) in overlays.items():
+        raw = os.environ.get(env_var, "").strip()
+        if not raw:
+            continue
+        try:
+            value = coerce(raw)
+        except (TypeError, ValueError):
+            continue
+        # Walk into the config and set the dotted key
+        parts = dotted_key.split(".")
+        cur: Dict[str, Any] = config
+        for p in parts[:-1]:
+            if not isinstance(cur.get(p), dict):
+                cur[p] = {}
+            cur = cur[p]
+        cur[parts[-1]] = value
+        # Auto-enable webhook if a URL was provided via plugin options
+        if env_var == "CLAUDE_PLUGIN_OPTION_WEBHOOK_URL" and value:
+            config.setdefault("webhook_settings", {})["enabled"] = True
+    return config
+
+
 def load_config() -> Dict[str, Any]:
     """Load configuration from user_preferences.json (cached per invocation)."""
     global _config_cache
@@ -586,24 +624,24 @@ def load_config() -> Dict[str, Any]:
         return _config_cache
     if not CONFIG_FILE.exists():
         log_debug(f"Config file not found: {CONFIG_FILE}")
-        _config_cache = {}
+        _config_cache = _apply_plugin_option_overlay({})
         return _config_cache
     try:
         config = json.loads(CONFIG_FILE.read_text(encoding="utf-8"))
         log_debug(f"Loaded config from {CONFIG_FILE}")
-        _config_cache = config
-        return config
+        _config_cache = _apply_plugin_option_overlay(config)
+        return _config_cache
     except json.JSONDecodeError as e:
         log_error(f"Invalid JSON in config file: {e}")
-        _config_cache = {}
+        _config_cache = _apply_plugin_option_overlay({})
         return _config_cache
     except PermissionError as e:
         log_error(f"Permission denied reading config: {e}")
-        _config_cache = {}
+        _config_cache = _apply_plugin_option_overlay({})
         return _config_cache
     except OSError as e:
         log_error(f"OS error reading config: {e}")
-        _config_cache = {}
+        _config_cache = _apply_plugin_option_overlay({})
         return _config_cache
 
 
@@ -735,11 +773,11 @@ CUSTOM_AUDIO_FILES = {
     "worktree_remove": "chime-worktree-remove.mp3",
     "elicitation": "chime-elicitation.mp3",
     "elicitation_result": "chime-elicitation-result.mp3",
-    # v5.0 hooks: reuse closest existing chime until v5.1 sound design pass.
-    "permission_denied": "chime-tool-failed.mp3",
-    "cwd_changed": "chime-config-change.mp3",
-    "file_changed": "chime-config-change.mp3",
-    "task_created": "chime-team-task-done.mp3",
+    # v5.0 hooks (dedicated chimes shipped in v5.0.1, generated via ElevenLabs)
+    "permission_denied": "chime-permission-denied.mp3",
+    "cwd_changed": "chime-cwd-changed.mp3",
+    "file_changed": "chime-file-changed.mp3",
+    "task_created": "chime-task-created.mp3",
 }
 
 

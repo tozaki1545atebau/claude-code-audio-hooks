@@ -5,6 +5,23 @@ All notable changes to Claude Code Audio Hooks will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.1] - 2026-04-11
+
+### Added
+
+- **Dedicated audio files for the four v5.0 hooks**, generated via ElevenLabs:
+  - Default theme (Jessica voice TTS): `permission-denied.mp3`, `cwd-changed.mp3`, `file-changed.mp3`, `task-created.mp3`
+  - Custom theme (sound-generation API): `chime-permission-denied.mp3`, `chime-cwd-changed.mp3`, `chime-file-changed.mp3`, `chime-task-created.mp3`
+- **`scripts/generate-audio.py`** — non-interactive audio file generator. Reads `config/audio_manifest.json` (a manifest of every audio file with its text prompt + theme + voice/sound-effect type) and regenerates any subset via the ElevenLabs API. Default behavior: skip existing files. Flags: `--force`, `--only filename1,filename2`, `--dry-run`. Reads `ELEVENLABS_API_KEY` from environment; never writes the key to disk. Output is NDJSON per file plus a final summary JSON. Future audio additions are now a one-line manifest edit + one-command rebuild.
+- **`config/audio_manifest.json`** — single source of truth for audio file generation prompts, voice IDs, sound-effect parameters, and the TTS model.
+- **`CLAUDE_PLUGIN_OPTION_*` env var overlay** in both `hook_runner.py` and `bin/audio-hooks`. The plugin manifest's `userConfig` declarations (`audio_theme`, `webhook_url`, `webhook_format`, `tts_enabled`) now flow from Claude Code's plugin install through to the runtime config without writing to `user_preferences.json`. Webhook auto-enables when a URL is supplied via the env var.
+
+### Changed
+
+- `hooks/hook_runner.py` `DEFAULT_AUDIO_FILES` and `CUSTOM_AUDIO_FILES`: the four v5.0 hooks now point at dedicated audio files instead of the v5.0 placeholder mappings.
+- `bin/audio-hooks` `HOOK_CATALOG`: same — real filenames replace placeholders.
+- Project version bumped 5.0.0 → 5.0.1 across `hook_runner.py`, `bin/audio-hooks`, `marketplace.json`, `plugin.json`.
+
 ## [5.0.0] - 2026-04-11
 
 **AI-first redesign.** Catches up to ~9 months of Claude Code releases (v2.1.69 → v2.1.101) and re-frames every project surface around Claude Code as the operator.

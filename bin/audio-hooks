@@ -132,7 +132,7 @@ def require_project_root() -> int:
 # Project state — version, install detection, hook catalogue
 # ---------------------------------------------------------------------------
 
-PROJECT_VERSION = "5.0.0"
+PROJECT_VERSION = "5.0.1"
 
 # Canonical hook catalogue. Order matches CLAUDE.md and the install scripts.
 HOOK_CATALOG: List[Dict[str, Any]] = [
@@ -158,11 +158,11 @@ HOOK_CATALOG: List[Dict[str, Any]] = [
     {"name": "worktree_remove",      "default": False, "audio": "worktree-remove.mp3",       "description": "Worktree removed"},
     {"name": "elicitation",          "default": False, "audio": "elicitation.mp3",           "description": "MCP server requested user input"},
     {"name": "elicitation_result",   "default": False, "audio": "elicitation-result.mp3",    "description": "User responded to MCP elicitation"},
-    # New in v5.0 — placeholder audio reuses closest existing file until v5.1 sound design pass.
-    {"name": "permission_denied",    "default": True,  "audio": "tool-failed.mp3",           "description": "Auto mode classifier denied a tool call (v5.0)"},
-    {"name": "cwd_changed",          "default": False, "audio": "config-change.mp3",         "description": "Working directory changed (v5.0)"},
-    {"name": "file_changed",         "default": False, "audio": "config-change.mp3",         "description": "Watched file changed on disk (v5.0)"},
-    {"name": "task_created",         "default": True,  "audio": "team-task-done.mp3",        "description": "Task created via TaskCreate (v5.0)"},
+    # New in v5.0 (dedicated audio shipped in v5.0.1, generated via ElevenLabs).
+    {"name": "permission_denied",    "default": True,  "audio": "permission-denied.mp3",     "description": "Auto mode classifier denied a tool call (v5.0)"},
+    {"name": "cwd_changed",          "default": False, "audio": "cwd-changed.mp3",           "description": "Working directory changed (v5.0)"},
+    {"name": "file_changed",         "default": False, "audio": "file-changed.mp3",          "description": "Watched file changed on disk (v5.0)"},
+    {"name": "task_created",         "default": True,  "audio": "task-created.mp3",          "description": "Task created via TaskCreate (v5.0)"},
 ]
 
 
@@ -209,14 +209,41 @@ def _config_path() -> Path:
     return PROJECT_ROOT / "config" / "user_preferences.json"
 
 
+def _apply_plugin_option_overlay(config: Dict[str, Any]) -> Dict[str, Any]:
+    """Overlay CLAUDE_PLUGIN_OPTION_* env vars onto the loaded config (v5.0.1).
+
+    Mirrors hook_runner._apply_plugin_option_overlay so the CLI sees the same
+    effective config as the hook runner. The plugin manifest declares
+    userConfig keys; Claude Code exposes them via CLAUDE_PLUGIN_OPTION_<KEY>.
+    """
+    overlays = {
+        "CLAUDE_PLUGIN_OPTION_AUDIO_THEME":   ("audio_theme", str),
+        "CLAUDE_PLUGIN_OPTION_WEBHOOK_URL":   ("webhook_settings.url", str),
+        "CLAUDE_PLUGIN_OPTION_WEBHOOK_FORMAT": ("webhook_settings.format", str),
+        "CLAUDE_PLUGIN_OPTION_TTS_ENABLED":   ("tts_settings.enabled", lambda v: v.lower() in ("1", "true", "yes")),
+    }
+    for env_var, (dotted_key, coerce) in overlays.items():
+        raw = os.environ.get(env_var, "").strip()
+        if not raw:
+            continue
+        try:
+            value = coerce(raw)
+        except (TypeError, ValueError):
+            continue
+        _set_dotted(config, dotted_key, value)
+        if env_var == "CLAUDE_PLUGIN_OPTION_WEBHOOK_URL" and value:
+            config.setdefault("webhook_settings", {})["enabled"] = True
+    return config
+
+
 def _load_config_raw() -> Dict[str, Any]:
     cp = _config_path()
     if not cp.exists():
-        return {}
+        return _apply_plugin_option_overlay({})
     try:
-        return json.loads(cp.read_text(encoding="utf-8"))
+        return _apply_plugin_option_overlay(json.loads(cp.read_text(encoding="utf-8")))
     except json.JSONDecodeError:
-        return {}
+        return _apply_plugin_option_overlay({})
 
 
 def _save_config_raw(cfg: Dict[str, Any]) -> Tuple[bool, str]:
