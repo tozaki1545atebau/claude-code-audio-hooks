@@ -1,6 +1,6 @@
 ---
 name: audio-hooks
-description: Use whenever the user asks to install, configure, snooze, mute, test, troubleshoot, or change settings for the claude-code-audio-hooks audio notification system. Trigger phrases include "audio hooks", "audio notifications", "snooze audio", "mute claude", "claude is too loud", "test audio", "switch audio theme", "rate limit alerts", "audio webhook", "TTS", "focus flow", and the slash command /audio-hooks. Also use when diagnosing why Claude Code is silent (or noisy) for the user.
+description: Use whenever the user asks to install, configure, uninstall, snooze, mute, test, troubleshoot, or change settings for the claude-code-audio-hooks audio notification system. Trigger phrases include "audio hooks", "audio notifications", "snooze audio", "mute claude", "claude is too loud", "test audio", "switch audio theme", "rate limit alerts", "audio webhook", "TTS", "text to speech", "focus flow", "breathing exercise", "notification mode", "audio only", "notification only", "debounce", "status line", "statusline", "context usage", "context window", "context monitor", "compact reminder", "uninstall audio", "audio status", "audio version", and the slash command /audio-hooks. Also use when diagnosing why Claude Code is silent (or noisy) for the user, or when the user wants to monitor context window usage.
 ---
 
 # audio-hooks skill
@@ -44,6 +44,15 @@ Run `audio-hooks hooks list` to see all 26 hooks with their current state. Then:
 | "enable the v5.0 permission_denied hook" | `audio-hooks hooks enable permission_denied` |
 | "watch .env files for changes" | `audio-hooks hooks enable file_changed` and `audio-hooks set file_changed.watch '[".env",".envrc"]'` |
 
+**Check project status**
+
+Run `audio-hooks status` when the user asks "what's the current audio config?", "is audio working?", "show me audio status", etc. It returns a full snapshot: version, theme, enabled hooks count, snooze state, focus flow, webhook, TTS, rate-limit alerts, and install mode.
+
+```bash
+audio-hooks status                     # full state snapshot
+audio-hooks version                    # version + install type detection
+```
+
 **Change audio theme**
 
 The project ships two themes. `default` is voice recordings, `custom` is non-voice chimes.
@@ -57,13 +66,14 @@ audio-hooks theme set default           # switch to voice
 **Webhook fan-out (Slack / Discord / Teams / ntfy / raw)**
 
 ```bash
+audio-hooks webhook                     # view current webhook config
 audio-hooks webhook set --url https://ntfy.sh/my-claude-channel --format ntfy
 audio-hooks webhook set --url https://hooks.slack.com/services/... --format slack
 audio-hooks webhook test                # POST a test payload
 audio-hooks webhook clear               # disable
 ```
 
-The raw format ships the `audio-hooks.webhook.v1` schema. Every event includes `session_id`, `session_name`, `worktree`, `agent`, `rate_limits`, `last_assistant_message`, `notification_type`, `error_type`, `source`, `trigger`, `load_reason`, and `permission_suggestions` at the top level.
+Supported formats: `slack`, `discord`, `teams`, `ntfy`, `raw`. The raw format ships the `audio-hooks.webhook.v1` schema. Every event includes `session_id`, `session_name`, `worktree`, `agent`, `rate_limits`, `last_assistant_message`, `notification_type`, `error_type`, `source`, `trigger`, `load_reason`, and `permission_suggestions` at the top level.
 
 **Text-to-speech**
 
@@ -83,6 +93,108 @@ audio-hooks rate-limits set --enabled true
 audio-hooks rate-limits set --five-hour-thresholds 75,90,98
 audio-hooks rate-limits set --seven-day-thresholds 80,95
 ```
+
+**Status line / context window monitoring**
+
+The status line displays real-time audio-hooks state and context window usage at the bottom of Claude Code. It includes a color-coded context usage bar that warns the user when context is getting full (the "agent dumb zone" starts around 60%):
+
+- 🟢 Green (< 50%): safe — agent performs well
+- 🟡 Yellow (50–80%): caution — user should `/compact` or `/clear`
+- 🔴 Red (> 80%): danger — agent performance degrades significantly
+
+| User says | Run |
+|---|---|
+| "install the status line" / "show context usage" / "monitor context window" | `audio-hooks statusline install` then tell the user to restart Claude Code |
+| "remove the status line" | `audio-hooks statusline uninstall` |
+| "is the status line installed?" | `audio-hooks statusline show` |
+
+After installing, the status line updates every 60 seconds and shows two lines:
+```
+[Opus] 🔊 Audio Hooks v5.0.3 | 6/26 Sounds | Webhook: off | Theme: Voice
+🌿 main  ████░░░░ API Quota: 60%  █████░░░ Context: 65% ⚠️ /compact
+```
+
+**Customise which status line segments to show**
+
+The status line has 10 segments the user can freely combine. By default all are shown. Set `statusline_settings.visible_segments` to an array of segment names to show only those:
+
+Line 1 segments: `model`, `version`, `sounds`, `webhook`, `theme`
+Line 2 segments: `snooze`, `focus`, `branch`, `api_quota`, `context`
+
+| User says | Run |
+|---|---|
+| "only show context usage in the status line" | `audio-hooks set statusline_settings.visible_segments '["context"]'` |
+| "show context and API quota only" | `audio-hooks set statusline_settings.visible_segments '["context","api_quota"]'` |
+| "show context, branch, and model" | `audio-hooks set statusline_settings.visible_segments '["model","context","branch"]'` |
+| "show everything in the status line" (reset) | `audio-hooks set statusline_settings.visible_segments '[]'` |
+| "add webhook to the status line" | Read current with `audio-hooks get statusline_settings.visible_segments`, append `"webhook"` to the array, then set the updated array |
+| "remove sounds count from status line" | Read current, remove `"sounds"`, set the updated array |
+
+Examples of what the user sees after customisation:
+```
+# Only context:
+█████░░░ Context: 65% ⚠️ /compact
+
+# context + api_quota:
+██████░░ API Quota: 85%  █████░░░ Context: 65% ⚠️ /compact
+
+# model + branch + context:
+[Opus]
+🌿 main  █████░░░ Context: 65% ⚠️ /compact
+```
+
+**Notification settings (audio mode, detail level, per-hook overrides)**
+
+Control how notifications are delivered — audio only, desktop notification only, both, or disabled entirely:
+
+| User says | Run |
+|---|---|
+| "only play audio, no desktop notifications" | `audio-hooks set notification_settings.mode audio_only` |
+| "only show desktop notifications, no audio" | `audio-hooks set notification_settings.mode notification_only` |
+| "I want both audio and notifications" | `audio-hooks set notification_settings.mode audio_and_notification` |
+| "disable all notifications" | `audio-hooks set notification_settings.mode disabled` |
+| "make notifications more detailed" | `audio-hooks set notification_settings.detail_level verbose` |
+| "minimal notifications" | `audio-hooks set notification_settings.detail_level minimal` |
+| "only use desktop notification for the stop hook" | `audio-hooks set notification_settings.per_hook.stop notification_only` |
+
+**Playback settings**
+
+```bash
+# Adjust debounce (minimum ms between same hook firing, default 500)
+audio-hooks set playback_settings.debounce_ms 300
+```
+
+**Focus Flow (anti-distraction micro-tasks)**
+
+Focus Flow offers a brief breathing exercise or mindfulness prompt while Claude is thinking, helping the user stay focused during long operations:
+
+| User says | Run |
+|---|---|
+| "enable focus flow" / "breathing exercises" | `audio-hooks set focus_flow.enabled true` |
+| "disable focus flow" | `audio-hooks set focus_flow.enabled false` |
+| "change breathing pattern to 4-7-8" | `audio-hooks set focus_flow.breathing_pattern "4-7-8"` |
+| "only show focus after 30 seconds of thinking" | `audio-hooks set focus_flow.min_thinking_seconds 30` |
+
+Modes: `breathing` (default). Breathing patterns: `4-7-8` (default), or other supported patterns. `min_thinking_seconds` (default 15) controls the delay before the focus prompt appears.
+
+**Uninstall**
+
+| User says | Run |
+|---|---|
+| "uninstall audio hooks" (plugin install) | Tell the user to type `/plugin uninstall audio-hooks@chanmeng-audio-hooks` in Claude Code |
+| "uninstall audio hooks" (script install) | `bash scripts/uninstall.sh --yes` |
+| "remove everything including config and audio files" | `bash scripts/uninstall.sh --yes --purge` |
+
+**Read or write any config key**
+
+For any setting not covered above, use the generic getter/setter:
+
+```bash
+audio-hooks get <dotted.key>           # read any config key
+audio-hooks set <dotted.key> <value>   # write any config key (auto-coerces bool/int/JSON)
+```
+
+Run `audio-hooks manifest --schema` to see the full JSON Schema for all config keys.
 
 **Test that audio is actually working**
 
@@ -156,13 +268,32 @@ audio-hooks hooks enable-only <a> <b>      # exclusive enable
 
 audio-hooks snooze [duration|off|status]   # mute (default 30m)
 audio-hooks theme set <default|custom>     # switch theme
+audio-hooks webhook                        # view current webhook config
 audio-hooks webhook set --url <u> --format <f>
+audio-hooks webhook test                   # POST a test payload
+audio-hooks webhook clear                  # disable webhook
 audio-hooks tts set --enabled true --speak-assistant-message true
 audio-hooks rate-limits set --five-hour-thresholds 80,95
 
+audio-hooks set notification_settings.mode <mode>            # audio_only | notification_only | audio_and_notification | disabled
+audio-hooks set notification_settings.detail_level <level>   # minimal | standard | verbose
+audio-hooks set notification_settings.per_hook.<hook> <mode> # per-hook override
+audio-hooks set playback_settings.debounce_ms <int>          # min ms between same hook (default 500)
+audio-hooks set focus_flow.enabled true                      # enable focus flow
+audio-hooks set focus_flow.breathing_pattern "4-7-8"         # breathing pattern
+
+audio-hooks statusline install             # register status line (restart Claude Code after)
+audio-hooks statusline uninstall           # remove status line
+audio-hooks statusline show                # check registration state
+audio-hooks set statusline_settings.visible_segments '["context"]'               # show only context bar
+audio-hooks set statusline_settings.visible_segments '["context","api_quota"]'   # show context + API quota
+audio-hooks set statusline_settings.visible_segments '[]'                        # show all (default)
+
 audio-hooks test <hook|all>                # play a hook end-to-end
 audio-hooks logs tail --n 50               # recent NDJSON events
+audio-hooks logs clear                     # truncate the event log
 
 audio-hooks get <dotted.key>               # any config key
 audio-hooks set <dotted.key> <value>       # any config key (auto-coerces)
+audio-hooks update                         # show current version info
 ```

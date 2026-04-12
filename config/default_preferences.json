@@ -141,6 +141,11 @@
     "audio": "notification-urgent.mp3"
   },
 
+  "statusline_settings": {
+    "_comment": "Controls which segments appear in the Claude Code status line. Set visible_segments to an array of segment names to show only those. Empty array or omission shows all segments.",
+    "visible_segments": []
+  },
+
   "tts_settings": {
     "_comment": "Text-to-speech mode - speaks context-aware messages. Requires: macOS (say), Linux (espeak/spd-say), Windows (SAPI)",
     "enabled": false,

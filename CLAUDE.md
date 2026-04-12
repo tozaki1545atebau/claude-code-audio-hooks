@@ -140,6 +140,7 @@ The canonical state is `audio-hooks hooks list`. Always run that for the live va
 | `rate_limit_alerts.five_hour_thresholds` | int[] | `[80, 95]` | 5h window thresholds |
 | `rate_limit_alerts.seven_day_thresholds` | int[] | `[80, 95]` | 7d window thresholds |
 | `focus_flow.enabled` / `mode` / `min_thinking_seconds` / `breathing_pattern` | mixed | off / `breathing` / 15 / `4-7-8` | Anti-distraction micro-task |
+| `statusline_settings.visible_segments` | string[] | `[]` (all) | Which segments to show. Names: `model`, `version`, `sounds`, `webhook`, `theme`, `snooze`, `focus`, `branch`, `api_quota`, `context`. Empty = all. |
 
 ## Error codes (every error event in NDJSON carries one)
 
@@ -286,7 +287,8 @@ After editing any canonical file in `/hooks/`, `/bin/`, `/audio/`, or `/config/`
 | "test that audio is working" | `audio-hooks test all` |
 | "why is there no sound" | `audio-hooks diagnose` (read errors and warnings, run `suggested_command` for each) |
 | "show me the recent errors" | `audio-hooks logs tail --level error --n 20` |
-| "show me the status line" | `audio-hooks statusline install` then restart Claude Code |
+| "show me the status line" / "monitor context usage" / "show context window" | `audio-hooks statusline install` then restart Claude Code (status line includes color-coded context window usage: 🟢 <50% safe, 🟡 50-80% `/compact`, 🔴 >80% danger) |
+| "only show context in the status line" / "customise status line" | `audio-hooks set statusline_settings.visible_segments '["context"]'` (segments: `model`, `version`, `sounds`, `webhook`, `theme`, `snooze`, `focus`, `branch`, `api_quota`, `context`; empty `[]` = all) |
 | "uninstall the project" | `/plugin uninstall audio-hooks@chanmeng-audio-hooks` (plugin) or `bash scripts/uninstall.sh --yes` (script install) |
 | "remove everything including config" | `bash scripts/uninstall.sh --yes --purge` |
 

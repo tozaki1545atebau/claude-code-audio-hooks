@@ -1,16 +1,25 @@
 #!/usr/bin/env python3
 """audio-hooks-statusline — Claude Code status line script.
 
-Reads the JSON session document Claude Code pipes to stdin and prints two
-lines to stdout:
+Reads the JSON session document Claude Code pipes to stdin and prints up to
+two lines to stdout.  Which segments appear is controlled by the user config
+key ``statusline_settings.visible_segments`` (an array of segment names).
+When the array is empty (default) every segment is shown.
 
-  Line 1 (always): [Model] 🔊 audio-hooks vX.Y | N hooks | webhook: fmt | theme: name
-  Line 2 (conditional): [SNOOZED Xm] [FOCUS: mode] 🌿 branch  rate-limit bar
+Available segments
+------------------
+Line 1: model, version, sounds, webhook, theme
+Line 2: snooze, focus, branch, api_quota, context
 
-Reads `audio-hooks status` once per (session_id, 5s) and caches it under
-${CLAUDE_PLUGIN_DATA}/statusline.cache.<session_id>. Designed to be set
-in ~/.claude/settings.json with refreshInterval: 60 so snooze countdowns
-and rate-limit bars update during idle periods.
+Example user configuration (via ``audio-hooks set``):
+  audio-hooks set statusline_settings.visible_segments '["context"]'
+  audio-hooks set statusline_settings.visible_segments '["context","api_quota","branch"]'
+  audio-hooks set statusline_settings.visible_segments '[]'   # show all (default)
+
+Context window thresholds (agent-safety):
+  GREEN  < 50%  — safe for autonomous agent work
+  YELLOW 50-80% — should /compact or /clear ("agent dumb zone" starts ~60%)
+  RED    > 80%  — agent performance degrades significantly
 
 Hard rules:
   - No interactive prompts.
@@ -39,6 +48,14 @@ DIM = "\033[2m"
 RESET = "\033[0m"
 
 CACHE_TTL_SEC = 5
+
+ALL_SEGMENTS = {"model", "version", "sounds", "webhook", "theme",
+                "snooze", "focus", "branch", "api_quota", "context"}
+LINE1_SEGMENTS = {"model", "version", "sounds", "webhook", "theme"}
+LINE2_SEGMENTS = {"snooze", "focus", "branch", "api_quota", "context"}
+
+# Backwards compatibility: accept old segment names from existing configs
+_SEGMENT_ALIASES = {"hooks": "sounds", "rate_limit": "rate-limit", "ctx": "context"}
 
 
 def _read_session_input() -> Dict[str, Any]:
@@ -130,8 +147,8 @@ def _format_remaining(seconds: int) -> str:
     return f"{h}h{m}m" if m else f"{h}h"
 
 
-def _bar(percent: float, width: int = 10) -> str:
-    """Render a unicode progress bar with color thresholds."""
+def _bar(percent: float, width: int = 8) -> str:
+    """Render a unicode progress bar with rate-limit color thresholds."""
     pct = max(0, min(100, int(percent)))
     filled = pct * width // 100
     empty = width - filled
@@ -144,6 +161,39 @@ def _bar(percent: float, width: int = 10) -> str:
     return f"{color}{'█' * filled}{DIM}{'░' * empty}{RESET}"
 
 
+def _ctx_bar(percent: float, width: int = 8) -> str:
+    """Render a context-window progress bar with agent-safety thresholds.
+
+    Thresholds differ from rate-limit bar:
+      GREEN  < 50%   — safe for autonomous agent work
+      YELLOW 50-80%  — should /compact or /clear
+      RED    > 80%   — agent performance degrades significantly
+    """
+    pct = max(0, min(100, int(percent)))
+    filled = pct * width // 100
+    empty = width - filled
+    if pct > 80:
+        color = RED
+    elif pct >= 50:
+        color = YELLOW
+    else:
+        color = GREEN
+    return f"{color}{'█' * filled}{DIM}{'░' * empty}{RESET}"
+
+
+def _normalise_segments(raw: list) -> set:
+    """Turn the user's visible_segments list into a set of canonical names.
+
+    Accepts old names (ctx, hooks, rate_limit) for backwards compatibility.
+    """
+    out = set()
+    for s in raw:
+        canonical = _SEGMENT_ALIASES.get(s, s)
+        if canonical in ALL_SEGMENTS:
+            out.add(canonical)
+    return out
+
+
 def main() -> int:
     session = _read_session_input()
     session_id = str(session.get("session_id") or "default")
@@ -151,51 +201,88 @@ def main() -> int:
 
     rate_limits = (session.get("rate_limits") or {}) if isinstance(session.get("rate_limits"), dict) else {}
     git_worktree = (session.get("workspace") or {}).get("git_worktree") if isinstance(session.get("workspace"), dict) else None
+    ctx_window = session.get("context_window") or {}
 
     status = _get_status(session_id)
 
+    # Determine which segments to show
+    sl_cfg = (status.get("statusline") or {}) if status else {}
+    raw_vis = sl_cfg.get("visible_segments") or []
+    visible = _normalise_segments(raw_vis) if raw_vis else ALL_SEGMENTS
+
+    def show(segment: str) -> bool:
+        return segment in visible
+
     # Line 1: model + project header
     if not status:
-        print(f"{CYAN}[{model}]{RESET} {DIM}audio-hooks (status unavailable){RESET}")
+        print(f"{CYAN}[{model}]{RESET} {DIM}Audio Hooks (status unavailable){RESET}")
         return 0
 
     version = status.get("version", "?")
     enabled_count = status.get("enabled_hook_count", 0)
     total_count = status.get("total_hook_count", 0)
-    theme = status.get("theme", "default")
+    theme_raw = status.get("theme", "default")
+    theme_label = "Voice" if theme_raw == "default" else "Chimes" if theme_raw == "custom" else theme_raw
     webhook = status.get("webhook") or {}
-    webhook_part = f"webhook: {webhook.get('format', 'raw')}" if webhook.get("enabled") else f"{DIM}webhook: off{RESET}"
+    if webhook.get("enabled"):
+        webhook_part = f"Webhook: {webhook.get('format', 'raw')}"
+    else:
+        webhook_part = f"{DIM}Webhook: off{RESET}"
 
-    line1 = (
-        f"{CYAN}[{model}]{RESET} \U0001f50a audio-hooks v{version} | "
-        f"{enabled_count}/{total_count} hooks | "
-        f"{webhook_part} | theme: {theme}"
-    )
-    print(line1)
+    # Build Line 1 from visible segments
+    l1_parts = []
+    if show("model"):
+        l1_parts.append(f"{CYAN}[{model}]{RESET}")
+    if show("version"):
+        l1_parts.append(f"\U0001f50a Audio Hooks v{version}")
+    if show("sounds"):
+        l1_parts.append(f"{enabled_count}/{total_count} Sounds")
+    if show("webhook"):
+        l1_parts.append(webhook_part)
+    if show("theme"):
+        l1_parts.append(f"Theme: {theme_label}")
+
+    if visible & LINE1_SEGMENTS:
+        print(" | ".join(l1_parts) if len(l1_parts) > 1 else (l1_parts[0] if l1_parts else ""))
 
     # Line 2: conditional state
     parts = []
 
     snooze = status.get("snooze") or {}
-    if snooze.get("active"):
+    if show("snooze") and snooze.get("active"):
         remaining = int(snooze.get("remaining_seconds", 0))
-        parts.append(f"{YELLOW}[SNOOZED {_format_remaining(remaining)}]{RESET}")
+        parts.append(f"{YELLOW}[MUTED {_format_remaining(remaining)}]{RESET}")
 
     focus = status.get("focus_flow") or {}
-    if focus.get("enabled") and focus.get("mode") not in (None, "disabled", ""):
-        parts.append(f"{CYAN}[FOCUS: {focus.get('mode')}]{RESET}")
+    if show("focus") and focus.get("enabled") and focus.get("mode") not in (None, "disabled", ""):
+        parts.append(f"{CYAN}[Focus: {focus.get('mode')}]{RESET}")
 
-    if git_worktree:
+    if show("branch") and git_worktree:
         parts.append(f"\U0001f33f {git_worktree}")
 
-    five_hour = (rate_limits.get("five_hour") or {}) if isinstance(rate_limits, dict) else {}
-    used = five_hour.get("used_percentage")
-    if used is not None:
-        try:
-            pct = float(used)
-            parts.append(f"{_bar(pct)} 5h: {int(pct)}%")
-        except (TypeError, ValueError):
-            pass
+    if show("api_quota"):
+        five_hour = (rate_limits.get("five_hour") or {}) if isinstance(rate_limits, dict) else {}
+        used = five_hour.get("used_percentage")
+        if used is not None:
+            try:
+                pct = float(used)
+                parts.append(f"{_bar(pct)} API Quota: {int(pct)}%")
+            except (TypeError, ValueError):
+                pass
+
+    if show("context"):
+        ctx_used = ctx_window.get("used_percentage")
+        if ctx_used is not None:
+            try:
+                ctx_pct = float(ctx_used)
+                hint = ""
+                if ctx_pct > 80:
+                    hint = f" {RED}\U0001f6d1 /compact{RESET}"
+                elif ctx_pct >= 50:
+                    hint = f" {YELLOW}\u26a0\ufe0f /compact{RESET}"
+                parts.append(f"{_ctx_bar(ctx_pct)} Context: {int(ctx_pct)}%{hint}")
+            except (TypeError, ValueError):
+                pass
 
     if parts:
         print("  ".join(parts))

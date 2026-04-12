@@ -478,6 +478,7 @@ def cmd_status(_args: List[str]) -> int:
     tts = cfg.get("tts_settings", {}) or {}
     focus = cfg.get("focus_flow", {}) or {}
     rl = cfg.get("rate_limit_alerts", {}) or {}
+    sl = cfg.get("statusline_settings", {}) or {}
     install = _detect_install_mode()
 
     # Resolve the effective plugin data dir even when CLAUDE_PLUGIN_DATA isn't set
@@ -516,6 +517,9 @@ def cmd_status(_args: List[str]) -> int:
             "seven_day_thresholds": rl.get("seven_day_thresholds", [80, 95]),
         },
         "install": install,
+        "statusline": {
+            "visible_segments": sl.get("visible_segments", []),
+        },
     })
     return 0
 

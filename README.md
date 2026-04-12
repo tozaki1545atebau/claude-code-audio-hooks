@@ -38,7 +38,7 @@ v5.0 is an **AI-first redesign**. Every project surface is now machine-operable 
 | **Native matcher routing** | `hooks/hooks.json` registers per-matcher handlers. Each variant gets its own audio. |
 | **Rate-limit alerts** | Watches stdin `rate_limits` and plays a one-shot warning at 80%/95% of your 5h or 7d quota. Marker-debounced per `(window, threshold, resets_at)`. |
 | **TTS speak Claude's reply** | `audio-hooks tts set --speak-assistant-message true` — instead of "Task completed", TTS speaks Claude's actual final message. |
-| **Status line** | Two-line bottom bar with snooze indicator, worktree branch, and color-coded rate-limit progress bar. Auto-refreshes every 60s. |
+| **Status line with context monitor** | Two-line bottom bar with color-coded **Context** and **API Quota** progress bars, mute indicator, branch name, and 10 customisable segments. Context bar warns when the "agent dumb zone" approaches (🟢 <50% safe, 🟡 50–80% caution, 🔴 >80% danger). |
 | **ElevenLabs audio generator** | `scripts/generate-audio.py` reads `config/audio_manifest.json` and regenerates any audio file via the ElevenLabs API. Future audio additions are a one-line manifest edit + one-command rebuild. |
 
 See [`CHANGELOG.md`](CHANGELOG.md) for the full v5.0 / v5.0.1 entries.
@@ -163,6 +163,11 @@ Once installed, you operate the project the same way. Pick the prompt that match
 | **Test that audio is working** | *"Test all my audio-hooks hooks and tell me if any failed."* |
 | **Show me a status snapshot** | *"What's the current state of audio-hooks? Show me which hooks are enabled, the theme, and any recent errors."* |
 | **Add a status line at the bottom** | *"Install the audio-hooks status line in my Claude Code settings."* |
+| **Only show context usage in the status line** | *"Configure the status line to only show context usage."* |
+| **Show context + API quota in the status line** | *"Show only context and API quota in the status line."* |
+| **Show everything in the status line** | *"Reset the status line to show all segments."* |
+| **Only play audio, no desktop notifications** | *"Switch audio-hooks to audio-only mode."* |
+| **Enable focus flow breathing exercises** | *"Enable the audio-hooks focus flow with breathing exercises."* |
 
 Each prompt is one message. Claude Code parses it, picks the right `audio-hooks` subcommand(s), runs them, and reports back. You don't memorise anything.
 
@@ -458,6 +463,13 @@ Inside Claude Code, just talk:
 | "test that audio is working" | `audio-hooks test all` |
 | "why is there no sound" | `audio-hooks diagnose` then runs the `suggested_command` from each error |
 | "show me the recent errors" | `audio-hooks logs tail --level error --n 20` |
+| "install the status line" | `audio-hooks statusline install` → tell user to restart Claude Code |
+| "only show context in the status line" | `audio-hooks set statusline_settings.visible_segments '["context"]'` |
+| "show context and API quota in the status line" | `audio-hooks set statusline_settings.visible_segments '["context","api_quota"]'` |
+| "show everything in the status line" | `audio-hooks set statusline_settings.visible_segments '[]'` |
+| "only play audio, no desktop popups" | `audio-hooks set notification_settings.mode audio_only` |
+| "enable focus flow" | `audio-hooks set focus_flow.enabled true` |
+| "uninstall audio hooks" | `/plugin uninstall audio-hooks@chanmeng-audio-hooks` |
 
 The SKILL's golden rule is: **always run `audio-hooks manifest` first** if you're unsure what's available. The manifest is the live source of truth and never goes stale relative to the binary.
 
@@ -541,19 +553,77 @@ The raw payload looks like:
 
 Webhook dispatch is fire-and-forget via subprocess so the parent hook process exits immediately even on slow webhooks. Failures land in NDJSON with `WEBHOOK_TIMEOUT` or `WEBHOOK_HTTP_ERROR` codes.
 
-### Status line
+### Status line with context window monitor
 
-Two-line bottom bar with snooze indicator, worktree branch, and color-coded rate-limit progress bar. Auto-refreshes every 60 seconds.
+Two-line bottom bar that shows the project state and real-time resource usage. Auto-refreshes every 60 seconds.
 
 ```text
-[Opus] 🔊 audio-hooks v5.0.1 | 6/26 hooks | webhook: ntfy | theme: custom
-[SNOOZED 23m]  🌿 feat/audio-v5  ████████░░ 5h: 78%
+[Opus] 🔊 Audio Hooks v5.0.3 | 6/26 Sounds | Webhook: ntfy | Theme: Voice
+[MUTED 23m]  🌿 feat/audio-v5  ████░░░░ API Quota: 78%  █████░░░ Context: 65% ⚠️ /compact
+```
+
+**Context window monitoring** is the headline feature. When Claude Code's context usage exceeds 60–70%, agent performance noticeably degrades (the "agent dumb zone"). The status line shows a color-coded **Context** bar that tells you exactly when to act:
+
+| Color | Range | What it means | What to do |
+|---|---|---|---|
+| 🟢 Green | < 50% | Safe — agent performs well | Nothing, keep working |
+| 🟡 Yellow | 50–80% | Caution — entering the "dumb zone" | Type `/compact` or `/clear` |
+| 🔴 Red | > 80% | Danger — agent makes frequent errors | Type `/compact` immediately |
+
+```mermaid
+flowchart LR
+    subgraph "Context Window Usage"
+        A["🟢 0–49%\nSafe"] --> B["🟡 50–80%\nCaution\n⚠️ /compact"]
+        B --> C["🔴 81–100%\nDanger\n🛑 /compact"]
+    end
+
+    style A fill:#22c55e,color:#fff
+    style B fill:#eab308,color:#000
+    style C fill:#ef4444,color:#fff
+```
+
+**10 customisable segments** — users can choose exactly which information appears:
+
+| Line | Segment name | What it shows |
+|---|---|---|
+| Line 1 | `model` | Model name (e.g. `[Opus]`) |
+| Line 1 | `version` | Audio Hooks version |
+| Line 1 | `sounds` | Enabled sound count (e.g. `6/26 Sounds`) |
+| Line 1 | `webhook` | Webhook status |
+| Line 1 | `theme` | Audio theme (`Voice` or `Chimes`) |
+| Line 2 | `snooze` | Mute countdown (only when active) |
+| Line 2 | `focus` | Focus Flow mode (only when active) |
+| Line 2 | `branch` | Git branch name |
+| Line 2 | `api_quota` | API usage quota bar (5-hour window) |
+| Line 2 | `context` | Context window usage bar with `/compact` hints |
+
+Examples of what customised status lines look like:
+
+```text
+# Only context (minimal, focused on the most actionable metric):
+█████░░░ Context: 65% ⚠️ /compact
+
+# Context + API quota (two progress bars, nothing else):
+██████░░ API Quota: 85%  █████░░░ Context: 65% ⚠️ /compact
+
+# Model + branch + context:
+[Opus]
+🌿 main  █████░░░ Context: 65% ⚠️ /compact
+
+# Everything (default):
+[Opus] 🔊 Audio Hooks v5.0.3 | 6/26 Sounds | Webhook: off | Theme: Voice
+🌿 main  ████░░░░ API Quota: 60%  █████░░░ Context: 65% ⚠️ /compact
 ```
 
 ```bash
-audio-hooks statusline install     # writes the statusLine field in ~/.claude/settings.json
-audio-hooks statusline show        # current state
-audio-hooks statusline uninstall   # removes the field
+audio-hooks statusline install     # register the status line (restart Claude Code after)
+audio-hooks statusline show        # check registration state
+audio-hooks statusline uninstall   # remove the status line
+
+# Customise which segments to show:
+audio-hooks set statusline_settings.visible_segments '["context"]'               # context only
+audio-hooks set statusline_settings.visible_segments '["context","api_quota"]'   # two bars only
+audio-hooks set statusline_settings.visible_segments '[]'                        # show all (default)
 ```
 
 ### Rate-limit alerts (v5.0)
@@ -657,6 +727,7 @@ Every error event in NDJSON carries one of these codes:
 | `rate_limit_alerts.five_hour_thresholds` | int[] | `[80, 95]` | 5h window thresholds |
 | `rate_limit_alerts.seven_day_thresholds` | int[] | `[80, 95]` | 7d window thresholds |
 | `focus_flow.enabled` / `mode` / `min_thinking_seconds` / `breathing_pattern` | mixed | off / `breathing` / 15 / `4-7-8` | Anti-distraction micro-task |
+| `statusline_settings.visible_segments` | string[] | `[]` (all) | Which segments to show: `model`, `version`, `sounds`, `webhook`, `theme`, `snooze`, `focus`, `branch`, `api_quota`, `context`. Empty = all. |
 
 Set any of these via `audio-hooks set <dotted.key> <value>`. The auto-coerce handles bool/int/JSON.
 

@@ -204,14 +204,18 @@ Native matcher routing happens at the `settings.json` layer (Claude Code's match
 
 ### 4. `bin/audio-hooks-statusline` (Claude Code status line)
 
-Two-line bottom bar registered in `~/.claude/settings.json` via `audio-hooks statusline install`. Reads stdin JSON Claude Code provides (model name, session_id, workspace.git_worktree, rate_limits) and emits two lines of plain text with ANSI colors:
+Two-line bottom bar registered in `~/.claude/settings.json` via `audio-hooks statusline install`. Reads stdin JSON Claude Code provides (model name, session_id, workspace.git_worktree, rate_limits, context_window) and emits two lines of plain text with ANSI colors:
 
 ```text
-[Opus] 🔊 audio-hooks v5.0.1 | 6/26 hooks | webhook: ntfy | theme: custom
-[SNOOZED 23m]  🌿 feat/audio-v5  ████████░░ 5h: 78%
+[Opus] 🔊 Audio Hooks v5.0.3 | 6/26 Sounds | Webhook: ntfy | Theme: Voice
+[MUTED 23m]  🌿 feat/audio-v5  ████░░░░ API Quota: 78%  █████░░░ Context: 65% ⚠️ /compact
 ```
 
-`refreshInterval: 60` is set in the registration so snooze countdowns and rate-limit bars update during idle periods. The script caches `audio-hooks status` for 5 seconds keyed on `session_id` to keep render time <100ms.
+The API Quota bar uses thresholds GREEN <70%, YELLOW 70-89%, RED ≥90%. The Context bar uses agent-safety thresholds: GREEN <50% (safe), YELLOW 50-80% (should `/compact`), RED >80% (agent "dumb zone"). Actionable hints (`⚠️ /compact` or `🛑 /compact`) appear in yellow/red zones.
+
+Users can customise which segments appear via `statusline_settings.visible_segments` (array of segment names). 10 segments available — Line 1: `model`, `version`, `sounds`, `webhook`, `theme`; Line 2: `snooze`, `focus`, `branch`, `api_quota`, `context`. Empty array (default) shows all. Example: `audio-hooks set statusline_settings.visible_segments '["context","api_quota"]'` shows only the two progress bars.
+
+`refreshInterval: 60` is set in the registration so snooze countdowns, rate-limit bars, and context usage bars update during idle periods. The script caches `audio-hooks status` for 5 seconds keyed on `session_id` to keep render time <100ms.
 
 ### 5. `scripts/`
 
