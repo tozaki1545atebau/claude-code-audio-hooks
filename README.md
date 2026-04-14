@@ -112,6 +112,34 @@ See [`CHANGELOG.md`](CHANGELOG.md) for full details.
 
 **For 99% of operations, you just talk to Claude Code in plain English.** The exception is the one-time install: `/reload-plugins` has no CLI equivalent, so the human types it exactly once. Everything else — configure, snooze, theme, webhook, troubleshoot, uninstall — is pure natural language.
 
+### Step 1 — Open Claude Code
+
+```bash
+claude
+```
+
+### Step 2 — Install with one prompt
+
+Paste this into Claude Code:
+
+> **Please install the audio-hooks plugin from `github.com/ChanMeng666/claude-code-audio-hooks`. Use the Bash tool to run `claude plugin marketplace add ChanMeng666/claude-code-audio-hooks` then `claude plugin install audio-hooks@chanmeng-audio-hooks`. After both commands complete, tell me to type `/reload-plugins` to activate the plugin.**
+
+### Step 3 — Type `/reload-plugins` (the one manual slash command)
+
+```text
+/reload-plugins
+```
+
+### Step 4 — Verify and configure with one prompt
+
+> **Verify audio-hooks works by running `audio-hooks diagnose` and `audio-hooks test all`. Then switch to the chime audio theme.**
+
+**Total:** 1 shell command + 2 natural-language prompts + 1 slash command = **4 things**. From here on: natural language forever.
+
+<details>
+<summary><kbd>Install flow diagram</kbd></summary>
+<br>
+
 ```mermaid
 sequenceDiagram
     participant Human
@@ -148,29 +176,7 @@ sequenceDiagram
     Note over Human,CLI: From here on: pure natural language forever.
 ```
 
-### Step 1 — Open Claude Code
-
-```bash
-claude
-```
-
-### Step 2 — Install with one prompt
-
-Paste this into Claude Code:
-
-> **Please install the audio-hooks plugin from `github.com/ChanMeng666/claude-code-audio-hooks`. Use the Bash tool to run `claude plugin marketplace add ChanMeng666/claude-code-audio-hooks` then `claude plugin install audio-hooks@chanmeng-audio-hooks`. After both commands complete, tell me to type `/reload-plugins` to activate the plugin.**
-
-### Step 3 — Type `/reload-plugins` (the one manual slash command)
-
-```text
-/reload-plugins
-```
-
-### Step 4 — Verify and configure with one prompt
-
-> **Verify audio-hooks works by running `audio-hooks diagnose` and `audio-hooks test all`. Then switch to the chime audio theme.**
-
-**Total:** 1 shell command + 2 natural-language prompts + 1 slash command = **4 things**. From here on: natural language forever.
+</details>
 
 ---
 
