@@ -199,16 +199,24 @@ sequenceDiagram
     CC-->>You: audio-hooks snooze 8h — quiet for the rest of the day.
     You->>CC: Unmute audio.
     CC-->>You: audio-hooks snooze off — audio resumed.
+    You->>CC: Is audio currently muted?
+    CC-->>You: audio-hooks snooze status — not snoozed.
     end
 
     rect rgb(254, 243, 199)
     Note over You,CC: Hook Selection & Notification Mode
     You->>CC: Configure audio-hooks to only fire on stop,<br/>notification, and permission_request —<br/>disable everything else.
     CC-->>You: audio-hooks hooks enable-only stop notification<br/>permission_request — 3 hooks active, rest disabled.
+    You->>CC: Enable session_start and session_end hooks<br/>so I hear when sessions begin and end.
+    CC-->>You: session_start and session_end enabled.
     You->>CC: Switch audio-hooks to audio-only mode,<br/>no desktop popups.
     CC-->>You: Notification mode set to audio_only.
-    You->>CC: Enable the audio-hooks focus flow<br/>with breathing exercises.
-    CC-->>You: Focus flow enabled with 4-7-8 breathing.
+    You->>CC: Switch to notification-only mode —<br/>desktop popups but no audio.
+    CC-->>You: Notification mode set to notification_only.
+    You->>CC: For the stop hook only, use desktop<br/>notification without audio.
+    CC-->>You: Per-hook override: stop → notification_only.
+    You->>CC: Make notifications more detailed.
+    CC-->>You: Detail level set to verbose.
     end
 ```
 
@@ -219,16 +227,22 @@ sequenceDiagram
 
     rect rgb(237, 233, 254)
     Note over You,CC: Webhooks & Integrations
-    You->>CC: Send audio-hooks alerts to my Slack webhook<br/>at https://hooks.slack.com/services/... and<br/>run a test to make sure it works.
-    CC-->>You: audio-hooks webhook set --url ... --format slack<br/>audio-hooks webhook test — Slack received it.
-    You->>CC: Configure audio-hooks to send alerts to<br/>https://ntfy.sh/my-claude-channel in ntfy format.<br/>Test it.
-    CC-->>You: Webhook set to ntfy format. Test notification delivered.
+    You->>CC: Send audio-hooks alerts to my Slack webhook<br/>at https://hooks.slack.com/services/... and test it.
+    CC-->>You: Webhook set to slack format. Test delivered.
+    You->>CC: Send alerts to my Discord webhook instead.
+    CC-->>You: Webhook set to discord format. Test delivered.
+    You->>CC: Send alerts to ntfy at<br/>https://ntfy.sh/my-channel. Test it.
+    CC-->>You: Webhook set to ntfy format. Test delivered.
+    You->>CC: Only send stop and stop_failure events<br/>to the webhook, nothing else.
+    CC-->>You: Webhook hook_types set to [stop, stop_failure].
     end
 
     rect rgb(254, 226, 226)
     Note over You,CC: TTS & Rate Limits
     You->>CC: Enable audio-hooks TTS and have it speak<br/>Claude's actual final message instead of<br/>a generic announcement.
     CC-->>You: TTS enabled with speak_assistant_message = true.
+    You->>CC: Set the stop hook TTS message to<br/>"Build finished" instead of the default.
+    CC-->>You: Custom TTS message for stop set.
     You->>CC: Make sure audio-hooks rate-limit alerts are<br/>enabled with 80% and 95% thresholds for both<br/>5-hour and 7-day windows.
     CC-->>You: Rate-limit alerts on — 80%, 95% for both windows.
     end
@@ -245,14 +259,28 @@ sequenceDiagram
     CC-->>You: Visible segments reset to all.
     end
 
+    rect rgb(232, 245, 233)
+    Note over You,CC: Focus Flow
+    You->>CC: Enable the audio-hooks focus flow<br/>with breathing exercises.
+    CC-->>You: Focus flow enabled — 4-7-8 breathing.
+    You->>CC: Switch focus flow to hydration reminders.
+    CC-->>You: Focus flow mode set to hydration.
+    You->>CC: Only show focus flow if Claude thinks<br/>for more than 30 seconds.
+    CC-->>You: min_thinking_seconds set to 30.
+    end
+
     rect rgb(229, 231, 235)
     Note over You,CC: Monitor, Debug & Uninstall
     You->>CC: Enable the audio-hooks file_changed hook and<br/>configure it to watch .env and .envrc.
     CC-->>You: file_changed enabled, watching [.env, .envrc].
     You->>CC: Test all my audio-hooks hooks and tell me<br/>if any failed.
     CC-->>You: audio-hooks test all — 26/26 passed.
-    You->>CC: What's the current state of audio-hooks?<br/>Show me which hooks are enabled, the theme,<br/>and any recent errors.
+    You->>CC: What's the current state of audio-hooks?
     CC-->>You: audio-hooks status — theme: default,<br/>18 hooks enabled, 0 errors.
+    You->>CC: Show me the last 20 errors and clear the log.
+    CC-->>You: 2 errors found (WEBHOOK_TIMEOUT). Log cleared.
+    You->>CC: What version of audio-hooks am I running?
+    CC-->>You: v5.0.3, plugin install.
     You->>CC: Please uninstall audio-hooks completely.
     CC-->>You: Plugin uninstalled. All hooks removed.
     end
@@ -266,27 +294,60 @@ Each prompt is one message. Claude Code parses it, runs the right subcommand(s),
 
 | Goal | Paste this into Claude Code |
 |---|---|
+| **Audio Theme** | |
 | Switch to chime sounds | *"Switch audio-hooks to the chime theme."* |
 | Switch to voice sounds | *"Switch audio-hooks to the voice theme."* |
+| **Snooze & Mute** | |
 | Mute for 30 minutes | *"Snooze audio for 30 minutes."* |
 | Mute for the rest of the day | *"Snooze audio for 8 hours."* |
 | Unmute | *"Unmute audio."* |
+| Check mute status | *"Is audio-hooks currently muted?"* |
+| **Hook Selection** | |
 | Only keep critical alerts | *"Only fire audio-hooks on stop, notification, and permission_request. Disable everything else."* |
+| Enable session start/end sounds | *"Enable the session_start and session_end hooks."* |
+| Enable tool execution sounds | *"Enable pretooluse and posttooluse audio."* |
+| **Notification Mode** | |
 | Audio only, no desktop popups | *"Switch audio-hooks to audio-only mode."* |
-| Turn on breathing exercises | *"Enable the audio-hooks focus flow with breathing exercises."* |
+| Desktop popups only, no audio | *"Switch audio-hooks to notification-only mode."* |
+| Per-hook override | *"For the stop hook, use desktop notification without audio."* |
+| Make notifications verbose | *"Make audio-hooks notifications more detailed."* |
+| Disable all notifications | *"Disable all audio-hooks notifications entirely."* |
+| **Focus Flow** | |
+| Breathing exercises | *"Enable the audio-hooks focus flow with breathing exercises."* |
+| Hydration reminders | *"Switch audio-hooks focus flow to hydration reminders."* |
+| Custom URL during thinking | *"Set audio-hooks focus flow to open `https://example.com` during thinking."* |
+| Longer thinking delay | *"Only show focus flow if Claude thinks for more than 30 seconds."* |
+| **Webhooks** | |
 | Send alerts to Slack | *"Send audio-hooks alerts to my Slack webhook at `https://hooks.slack.com/services/...` and test it."* |
+| Send alerts to Discord | *"Send audio-hooks alerts to my Discord webhook at `https://discord.com/api/webhooks/...` and test it."* |
+| Send alerts to Teams | *"Send audio-hooks alerts to my Teams webhook. Test it."* |
 | Send alerts to ntfy | *"Send audio-hooks alerts to `https://ntfy.sh/my-topic` in ntfy format. Test it."* |
+| Only webhook certain events | *"Only send stop and stop_failure events to the webhook."* |
+| Disable webhook | *"Disable the audio-hooks webhook."* |
+| **TTS (Text-to-Speech)** | |
 | Speak Claude's reply out loud | *"Enable audio-hooks TTS and speak Claude's actual final message."* |
-| Warn me before I hit the rate limit | *"Enable audio-hooks rate-limit alerts at 80% and 95% for both windows."* |
-| Watch .env for changes | *"Enable the audio-hooks file_changed hook and watch `.env` and `.envrc`."* |
+| Custom TTS message for a hook | *"Set the audio-hooks stop TTS message to 'Build finished'."* |
+| Limit spoken message length | *"Limit audio-hooks TTS to 300 characters."* |
+| **Rate-limit Alerts** | |
+| Enable with custom thresholds | *"Enable audio-hooks rate-limit alerts at 80% and 95% for both windows."* |
+| Adjust 5-hour thresholds | *"Set audio-hooks 5-hour rate-limit thresholds to 75% and 90%."* |
+| **Status Line** | |
 | Add a status bar | *"Install the audio-hooks status line."* |
 | Status bar: context only | *"Only show context usage in the audio-hooks status line."* |
 | Status bar: context + API quota | *"Show context and API quota in the audio-hooks status line."* |
 | Status bar: show everything | *"Reset the audio-hooks status line to show all segments."* |
+| Remove status bar | *"Uninstall the audio-hooks status line."* |
+| **File Watching** | |
+| Watch .env for changes | *"Enable the audio-hooks file_changed hook and watch `.env` and `.envrc`."* |
+| **Monitor & Debug** | |
 | Test all hooks | *"Test all audio-hooks and tell me if any failed."* |
 | Show current state | *"Show the current audio-hooks status — enabled hooks, theme, and recent errors."* |
 | Why no sound? | *"Audio-hooks isn't playing sounds. Diagnose and fix it."* |
 | Show recent errors | *"Show me the last 20 audio-hooks errors."* |
+| Clear the log | *"Clear the audio-hooks event log."* |
+| Check version | *"What version of audio-hooks am I running?"* |
+| Adjust debounce timing | *"Set audio-hooks debounce to 1000ms."* |
+| **Uninstall** | |
 | Uninstall | *"Please uninstall audio-hooks completely."* |
 
 </details>
