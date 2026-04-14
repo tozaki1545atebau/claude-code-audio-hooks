@@ -181,29 +181,85 @@ Claude Code will:
 
 ### Step 2 — configure with one sentence
 
-Once installed, you operate the project the same way. Pick the prompt that matches what you want:
+Once installed, you operate the project the same way — just talk to Claude Code. Every configuration is a single message:
 
-| You want to... | Paste this into Claude Code |
-|---|---|
-| **Switch to chime audio** (non-voice) | *"Switch audio-hooks to the chime theme."* |
-| **Switch to voice** (ElevenLabs Jessica) | *"Switch audio-hooks to the voice theme."* |
-| **Be quiet for 30 minutes** | *"Snooze audio for 30 minutes."* |
-| **Be quiet for the rest of the day** | *"Snooze audio for 8 hours."* |
-| **Resume audio** | *"Unmute audio."* |
-| **Only get critical alerts** (no chatty hooks) | *"Configure audio-hooks to only fire on stop, notification, and permission_request — disable everything else."* |
-| **Send alerts to my Slack** | *"Send audio-hooks alerts to my Slack webhook at `https://hooks.slack.com/services/...` and run a test to make sure it works."* |
-| **Send alerts to ntfy** | *"Configure audio-hooks to send alerts to `https://ntfy.sh/my-claude-channel` in ntfy format. Test it."* |
-| **Speak Claude's actual reply when done** | *"Enable audio-hooks TTS and have it speak Claude's actual final message instead of a generic announcement."* |
-| **Get a warning when I'm running low on quota** | *"Make sure audio-hooks rate-limit alerts are enabled with 80% and 95% thresholds for both 5-hour and 7-day windows."* |
-| **Watch my .env file for changes** | *"Enable the audio-hooks file_changed hook and configure it to watch `.env` and `.envrc`."* |
-| **Test that audio is working** | *"Test all my audio-hooks hooks and tell me if any failed."* |
-| **Show me a status snapshot** | *"What's the current state of audio-hooks? Show me which hooks are enabled, the theme, and any recent errors."* |
-| **Add a status line at the bottom** | *"Install the audio-hooks status line in my Claude Code settings."* |
-| **Only show context usage in the status line** | *"Configure the status line to only show context usage."* |
-| **Show context + API quota in the status line** | *"Show only context and API quota in the status line."* |
-| **Show everything in the status line** | *"Reset the status line to show all segments."* |
-| **Only play audio, no desktop notifications** | *"Switch audio-hooks to audio-only mode."* |
-| **Enable focus flow breathing exercises** | *"Enable the audio-hooks focus flow with breathing exercises."* |
+```mermaid
+sequenceDiagram
+    actor You as 🧑 You
+    participant CC as 🤖 Claude Code
+
+    rect rgb(219, 234, 254)
+    Note over You,CC: 🔊 Audio Theme
+    You->>CC: Switch audio-hooks to the chime theme.
+    CC->>You: ✅ audio-hooks theme set custom — switched to chimes.
+    You->>CC: Switch audio-hooks to the voice theme.
+    CC->>You: ✅ audio-hooks theme set default — switched to ElevenLabs Jessica.
+    end
+
+    rect rgb(220, 252, 231)
+    Note over You,CC: 🔇 Snooze & Mute
+    You->>CC: Snooze audio for 30 minutes.
+    CC->>You: ✅ audio-hooks snooze 30m — muted until 3:45 PM.
+    You->>CC: Snooze audio for 8 hours.
+    CC->>You: ✅ audio-hooks snooze 8h — quiet for the rest of the day.
+    You->>CC: Unmute audio.
+    CC->>You: ✅ audio-hooks snooze off — audio resumed.
+    end
+
+    rect rgb(254, 243, 199)
+    Note over You,CC: 🎯 Hook Selection
+    You->>CC: Configure audio-hooks to only fire on stop,<br/>notification, and permission_request —<br/>disable everything else.
+    CC->>You: ✅ audio-hooks hooks enable-only stop notification<br/>permission_request — 3 hooks active, rest disabled.
+    You->>CC: Switch audio-hooks to audio-only mode.
+    CC->>You: ✅ Notification mode set to audio_only.
+    You->>CC: Enable the audio-hooks focus flow<br/>with breathing exercises.
+    CC->>You: ✅ Focus flow enabled with 4-7-8 breathing.
+    end
+```
+
+```mermaid
+sequenceDiagram
+    actor You as 🧑 You
+    participant CC as 🤖 Claude Code
+
+    rect rgb(237, 233, 254)
+    Note over You,CC: 📡 Webhooks & Integrations
+    You->>CC: Send audio-hooks alerts to my Slack webhook<br/>at https://hooks.slack.com/services/... and<br/>run a test to make sure it works.
+    CC->>You: ✅ audio-hooks webhook set --url ... --format slack<br/>✅ audio-hooks webhook test — Slack received it.
+    You->>CC: Configure audio-hooks to send alerts to<br/>https://ntfy.sh/my-claude-channel in ntfy format.<br/>Test it.
+    CC->>You: ✅ Webhook set to ntfy format.<br/>✅ Test notification delivered.
+    end
+
+    rect rgb(254, 226, 226)
+    Note over You,CC: 🗣️ TTS & Rate Limits
+    You->>CC: Enable audio-hooks TTS and have it speak<br/>Claude's actual final message instead of<br/>a generic announcement.
+    CC->>You: ✅ TTS enabled with speak_assistant_message = true.
+    You->>CC: Make sure audio-hooks rate-limit alerts are<br/>enabled with 80% and 95% thresholds for both<br/>5-hour and 7-day windows.
+    CC->>You: ✅ Rate-limit alerts on: 80%, 95% for both windows.
+    end
+
+    rect rgb(207, 250, 254)
+    Note over You,CC: 📊 Status Line
+    You->>CC: Install the audio-hooks status line<br/>in my Claude Code settings.
+    CC->>You: ✅ audio-hooks statusline install — restart to see it.
+    You->>CC: Configure the status line to only show<br/>context usage.
+    CC->>You: ✅ Visible segments set to [context].
+    You->>CC: Show only context and API quota<br/>in the status line.
+    CC->>You: ✅ Visible segments set to [context, api_quota].
+    You->>CC: Reset the status line to show all segments.
+    CC->>You: ✅ Visible segments reset to all.
+    end
+
+    rect rgb(229, 231, 235)
+    Note over You,CC: 🔍 Monitor & Debug
+    You->>CC: Enable the audio-hooks file_changed hook and<br/>configure it to watch .env and .envrc.
+    CC->>You: ✅ file_changed enabled, watching [.env, .envrc].
+    You->>CC: Test all my audio-hooks hooks and tell me<br/>if any failed.
+    CC->>You: ✅ audio-hooks test all — 26/26 passed.
+    You->>CC: What's the current state of audio-hooks?<br/>Show me which hooks are enabled, the theme,<br/>and any recent errors.
+    CC->>You: ✅ audio-hooks status — theme: default,<br/>18 hooks enabled, 0 errors.
+    end
+```
 
 Each prompt is one message. Claude Code parses it, picks the right `audio-hooks` subcommand(s), runs them, and reports back. You don't memorise anything.
 
