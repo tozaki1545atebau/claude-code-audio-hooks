@@ -47,14 +47,6 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the full v5.0 / v5.0.1 entries.
 
 ## v5.0 in action
 
-### Plugin Marketplace
-
-The plugin is distributed via Claude Code's native plugin marketplace — one command to add, one to install.
-
-<p align="center">
-<img src="docs/images/plugin-marketplace.png" alt="Plugin Marketplace — chanmeng-audio-hooks marketplace registered alongside claude-plugins-official" width="720">
-</p>
-
 ### Plugin Installed & Enabled
 
 After install, the plugin appears in the Installed tab with all 26 hooks registered and the SKILL active.
