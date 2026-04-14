@@ -236,11 +236,8 @@ This is what "AI-first" means in practice: not "AI-assisted", not "AI-friendly",
 > ⚠ **You almost certainly don't need to read this section.** The natural-language prompts in [The AI-first way](#-the-ai-first-way-just-talk-to-claude-code) above already cover install, configure, troubleshoot, and uninstall. This section is for people who want to know what Claude Code is doing internally on their behalf, or who are operating the project from a script / CI.
 
 <details>
-<summary>Screenshot: plugin marketplace and installed views</summary>
+<summary>Screenshot: plugin installed view</summary>
 <br>
-<p align="center">
-<img src="docs/images/plugin-marketplace.png" alt="Plugin Marketplace" width="600">
-</p>
 <p align="center">
 <img src="docs/images/plugin-installed.png" alt="Plugin Installed" width="600">
 </p>
