@@ -263,6 +263,34 @@ sequenceDiagram
 
 Each prompt is one message. Claude Code parses it, picks the right `audio-hooks` subcommand(s), runs them, and reports back. You don't memorise anything.
 
+<details>
+<summary><b>Plain-text prompt reference</b> — copy-friendly table of every command above</summary>
+<br>
+
+| Goal | Paste this into Claude Code |
+|---|---|
+| Switch to chime sounds | *"Switch audio-hooks to the chime theme."* |
+| Switch to voice sounds | *"Switch audio-hooks to the voice theme."* |
+| Mute for 30 minutes | *"Snooze audio for 30 minutes."* |
+| Mute for the rest of the day | *"Snooze audio for 8 hours."* |
+| Unmute | *"Unmute audio."* |
+| Only keep critical alerts | *"Only fire audio-hooks on stop, notification, and permission_request. Disable everything else."* |
+| Audio only, no desktop popups | *"Switch audio-hooks to audio-only mode."* |
+| Turn on breathing exercises | *"Enable the audio-hooks focus flow with breathing exercises."* |
+| Send alerts to Slack | *"Send audio-hooks alerts to my Slack webhook at `https://hooks.slack.com/services/...` and test it."* |
+| Send alerts to ntfy | *"Send audio-hooks alerts to `https://ntfy.sh/my-topic` in ntfy format. Test it."* |
+| Speak Claude's reply out loud | *"Enable audio-hooks TTS and speak Claude's actual final message."* |
+| Warn me before I hit the rate limit | *"Enable audio-hooks rate-limit alerts at 80 % and 95 % for both 5-hour and 7-day windows."* |
+| Watch .env for changes | *"Enable the audio-hooks file_changed hook and watch `.env` and `.envrc`."* |
+| Add a status bar | *"Install the audio-hooks status line."* |
+| Status bar: context only | *"Only show context usage in the audio-hooks status line."* |
+| Status bar: context + API quota | *"Show context and API quota in the audio-hooks status line."* |
+| Status bar: show everything | *"Reset the audio-hooks status line to show all segments."* |
+| Test all hooks | *"Test all audio-hooks and tell me if any failed."* |
+| Show current state | *"Show the current audio-hooks status — enabled hooks, theme, and recent errors."* |
+
+</details>
+
 ### Step 3 — troubleshoot with one sentence
 
 If you ever stop hearing audio, paste this:
