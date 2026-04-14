@@ -45,6 +45,64 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the full v5.0 / v5.0.1 entries.
 
 ---
 
+## v5.0 in action
+
+<table>
+<tr>
+<td width="50%">
+
+**Plugin Marketplace**
+
+The plugin is distributed via Claude Code's native plugin marketplace — one command to add, one to install.
+
+<img src="docs/images/plugin-marketplace.png" alt="Plugin Marketplace — chanmeng-audio-hooks marketplace registered alongside claude-plugins-official" width="100%">
+
+</td>
+<td width="50%">
+
+**Plugin Installed & Enabled**
+
+After install, the plugin appears in the Installed tab with all 26 hooks registered and the SKILL active.
+
+<img src="docs/images/plugin-installed.png" alt="Plugin Installed — audio-hooks plugin enabled in Claude Code" width="100%">
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+**`/audio-hooks` SKILL**
+
+The bundled SKILL lets Claude Code understand natural-language audio requests — no commands to memorise.
+
+<img src="docs/images/skill-registration.png" alt="SKILL Registration — audio-hooks:audio-hooks skill listed as plugin, locked by plugin" width="100%">
+
+</td>
+<td width="50%">
+
+**Status Line with Context Monitor**
+
+Real-time context window and API quota bars — color-coded warnings before Claude enters the "agent dumb zone".
+
+<img src="docs/images/statusline-context-monitor.png" alt="Status Line — context window monitor showing API Quota and Context usage bars" width="100%">
+
+</td>
+</tr>
+<tr>
+<td colspan="2">
+
+**Marketplace Registration**
+
+The project registers as a first-party marketplace source that Claude Code discovers automatically.
+
+<img src="docs/images/plugin-marketplace-detail.png" alt="Marketplace Detail — chanmeng-audio-hooks marketplace with 1 available plugin" width="100%">
+
+</td>
+</tr>
+</table>
+
+---
+
 ## 🤖 The AI-first way (talk to Claude Code, with one slash command at install time)
 
 **For 99% of operations, you just talk to Claude Code in plain English** and the AI runs the right `audio-hooks` subcommand via its Bash tool. The exception is the one-time install: Claude Code's `/reload-plugins` command has no CLI equivalent (it's REPL-only), so the human types it exactly once after the plugin is installed. Everything else — install fetch, configure, snooze, theme switch, webhook setup, troubleshoot, uninstall — is pure natural language.
@@ -198,6 +256,17 @@ This is what "AI-first" means in practice: not "AI-assisted", not "AI-friendly",
 ## Install the plugin (manual reference)
 
 > ⚠ **You almost certainly don't need to read this section.** The natural-language prompts in [The AI-first way](#-the-ai-first-way-just-talk-to-claude-code) above already cover install, configure, troubleshoot, and uninstall. This section is for people who want to know what Claude Code is doing internally on their behalf, or who are operating the project from a script / CI.
+
+<details>
+<summary>Screenshot: plugin marketplace and installed views</summary>
+<br>
+<p align="center">
+<img src="docs/images/plugin-marketplace.png" alt="Plugin Marketplace" width="600">
+</p>
+<p align="center">
+<img src="docs/images/plugin-installed.png" alt="Plugin Installed" width="600">
+</p>
+</details>
 
 The plugin install is two slash commands inside Claude Code:
 
@@ -556,6 +625,8 @@ Webhook dispatch is fire-and-forget via subprocess so the parent hook process ex
 ### Status line with context window monitor
 
 Two-line bottom bar that shows the project state and real-time resource usage. Auto-refreshes every 60 seconds.
+
+<img src="docs/images/statusline-context-monitor.png" alt="Status line with context window monitor — API Quota and Context usage bars" width="720">
 
 ```text
 [Opus] 🔊 Audio Hooks v5.0.3 | 6/26 Sounds | Webhook: ntfy | Theme: Voice
