@@ -47,59 +47,45 @@ See [`CHANGELOG.md`](CHANGELOG.md) for the full v5.0 / v5.0.1 entries.
 
 ## v5.0 in action
 
-<table>
-<tr>
-<td width="50%">
-
-**Plugin Marketplace**
+### Plugin Marketplace
 
 The plugin is distributed via Claude Code's native plugin marketplace — one command to add, one to install.
 
-<img src="docs/images/plugin-marketplace.png" alt="Plugin Marketplace — chanmeng-audio-hooks marketplace registered alongside claude-plugins-official" width="100%">
+<p align="center">
+<img src="docs/images/plugin-marketplace.png" alt="Plugin Marketplace — chanmeng-audio-hooks marketplace registered alongside claude-plugins-official" width="720">
+</p>
 
-</td>
-<td width="50%">
-
-**Plugin Installed & Enabled**
+### Plugin Installed & Enabled
 
 After install, the plugin appears in the Installed tab with all 26 hooks registered and the SKILL active.
 
-<img src="docs/images/plugin-installed.png" alt="Plugin Installed — audio-hooks plugin enabled in Claude Code" width="100%">
+<p align="center">
+<img src="docs/images/plugin-installed.png" alt="Plugin Installed — audio-hooks plugin enabled in Claude Code" width="720">
+</p>
 
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-**`/audio-hooks` SKILL**
+### `/audio-hooks` SKILL
 
 The bundled SKILL lets Claude Code understand natural-language audio requests — no commands to memorise.
 
-<img src="docs/images/skill-registration.png" alt="SKILL Registration — audio-hooks:audio-hooks skill listed as plugin, locked by plugin" width="100%">
+<p align="center">
+<img src="docs/images/skill-registration.png" alt="SKILL Registration — audio-hooks:audio-hooks skill listed as plugin, locked by plugin" width="720">
+</p>
 
-</td>
-<td width="50%">
-
-**Status Line with Context Monitor**
+### Status Line with Context Monitor
 
 Real-time context window and API quota bars — color-coded warnings before Claude enters the "agent dumb zone".
 
-<img src="docs/images/statusline-context-monitor.png" alt="Status Line — context window monitor showing API Quota and Context usage bars" width="100%">
+<p align="center">
+<img src="docs/images/statusline-context-monitor.png" alt="Status Line — context window monitor showing API Quota and Context usage bars" width="720">
+</p>
 
-</td>
-</tr>
-<tr>
-<td colspan="2">
-
-**Marketplace Registration**
+### Marketplace Registration
 
 The project registers as a first-party marketplace source that Claude Code discovers automatically.
 
-<img src="docs/images/plugin-marketplace-detail.png" alt="Marketplace Detail — chanmeng-audio-hooks marketplace with 1 available plugin" width="100%">
-
-</td>
-</tr>
-</table>
+<p align="center">
+<img src="docs/images/plugin-marketplace-detail.png" alt="Marketplace Detail — chanmeng-audio-hooks marketplace with 1 available plugin" width="720">
+</p>
 
 ---
 
