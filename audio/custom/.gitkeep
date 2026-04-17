@@ -1,2 +1,6 @@
 # This directory is for your custom audio files
 # Place your MP3 files here and reference them in config/user_preferences.json
+
+# My custom audio files:
+# - notification.mp3  (soft chime for task completion)
+# - error.mp3         (gentle alert for errors)
