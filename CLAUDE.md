@@ -22,6 +22,9 @@ This document is the canonical machine-facing guide for the claude-code-audio-ho
 >
 > I disable the stop/completion sound as well — I usually have notifications for that via the OS already.
 > To apply after install: `audio-hooks set hooks.stop.enabled false`
+>
+> I also disable the error sound — I prefer to catch errors visually in the terminal rather than via audio.
+> To apply after install: `audio-hooks set hooks.error.enabled false`
 
 ## AI quickstart for Claude Code operating this project on a human's behalf
 
@@ -38,8 +41,4 @@ claude plugin install audio-hooks@chanmeng-audio-hooks
 # (you cannot run this — it is a REPL slash command with no CLI equivalent)
 ```
 
-Then the user types `/reload-plugins` themselves. After that, **you can run every other operation via the Bash tool forever** — `audio-hooks status`, `audio-hooks diagnose`, `audio-hooks test all`, `audio-hooks theme set custom`, etc.
-
-```bash
-# Ste
-```
+Then the user types `/reload-plugins` themselves. After that, **you can 
