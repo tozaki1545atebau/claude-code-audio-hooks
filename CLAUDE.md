@@ -19,6 +19,9 @@ This document is the canonical machine-facing guide for the claude-code-audio-ho
 >
 > I also disable the notification sound on tool_use events — I find it too noisy during long agentic runs.
 > To apply after install: `audio-hooks set hooks.tool_use.enabled false`
+>
+> I disable the stop/completion sound as well — I usually have notifications for that via the OS already.
+> To apply after install: `audio-hooks set hooks.stop.enabled false`
 
 ## AI quickstart for Claude Code operating this project on a human's behalf
 
@@ -38,10 +41,5 @@ claude plugin install audio-hooks@chanmeng-audio-hooks
 Then the user types `/reload-plugins` themselves. After that, **you can run every other operation via the Bash tool forever** — `audio-hooks status`, `audio-hooks diagnose`, `audio-hooks test all`, `audio-hooks theme set custom`, etc.
 
 ```bash
-# Step 4: verify (you run this via Bash tool after the user reloads)
-audio-hooks status
-audio-hooks diagnose
-audio-hooks test all
+# Ste
 ```
-
-The plugin install registers all 26 hook event handl
