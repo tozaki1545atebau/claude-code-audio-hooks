@@ -31,6 +31,8 @@ https://github.com/user-attachments/assets/3504d214-efac-4e01-84c0-426430b842d6
 <sup>Built with Remotion, Claude Code, ElevenLabs & Suno. Source: <a href="https://github.com/ChanMeng666/claude-code-audio-hooks-promo-video">claude-code-audio-hooks-promo-video</a></sup>
 
 > **Personal fork note:** I'm using this primarily on macOS with the `minimal` audio theme. If you're on macOS and find the default notification sounds too loud during focus sessions, check the [Troubleshooting](#-troubleshooting) section for volume configuration tips.
+>
+> **Additional personal note:** I've also set the default notification volume to `30` (down from the upstream default of `70`) and disabled TTS by default — both changes are reflected in my local config. Works much better for late-night coding sessions.
 
 </div>
 
@@ -67,7 +69,4 @@ v5.0 is an **AI-first redesign**. Every project surface is now machine-operable 
 | Highlight | Effect |
 |---|---|
 | **`audio-hooks` JSON CLI** | Single binary with 27 subcommands. JSON to stdout, stable error codes + suggested commands. |
-| **`/audio-hooks` SKILL** | Natural-language activation: "snooze audio for an hour" — Claude runs it for you. |
-| **NDJSON structured logging** | Schema `audio-hooks.v1` with stable error code enums. |
-| **Plugin-native install** | Two commands and you're done. |
-| **4 new hook 
+| **`/aud
