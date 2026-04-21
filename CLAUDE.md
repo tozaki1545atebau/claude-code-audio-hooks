@@ -16,6 +16,9 @@ This document is the canonical machine-facing guide for the claude-code-audio-ho
 
 > I keep `volume` defaulted to `0.4` instead of the upstream `0.7` — less jarring when working late.
 > To apply after install: `audio-hooks set volume 0.4`
+>
+> I also disable the notification sound on tool_use events — I find it too noisy during long agentic runs.
+> To apply after install: `audio-hooks set hooks.tool_use.enabled false`
 
 ## AI quickstart for Claude Code operating this project on a human's behalf
 
@@ -41,4 +44,4 @@ audio-hooks diagnose
 audio-hooks test all
 ```
 
-The plugin install registers all 26 hook event handlers via `hooks/hooks.json` automatically, the audio files are bundled in `plugins/audio-hooks/audio/`, and `${CLAUDE_PLUGIN_DATA}/user_preferences.json` is auto-initialised from the defa
+The plugin install registers all 26 hook event handl
