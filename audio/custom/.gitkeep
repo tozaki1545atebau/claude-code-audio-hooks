@@ -4,3 +4,5 @@
 # My custom audio files:
 # - notification.mp3  (soft chime for task completion)
 # - error.mp3         (gentle alert for errors)
+# - warning.mp3       (subtle tone for warnings)
+# - startup.mp3       (brief sound when session begins)
